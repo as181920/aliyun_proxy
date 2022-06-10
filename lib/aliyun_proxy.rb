@@ -2,5 +2,7 @@ require "aliyun_proxy/version"
 require "aliyun_proxy/engine"
 
 module AliyunProxy
-  # Your code goes here...
+  def self.table_name_prefix
+    "aliyun_"
+  end
 end

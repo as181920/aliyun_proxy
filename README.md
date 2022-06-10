@@ -1,24 +1,13 @@
 # AliyunProxy
-Short description and motivation.
+阿里云API服务对接
 
 ## Usage
-How to use my plugin.
 
 ## Installation
 Add this line to your application's Gemfile:
 
 ```ruby
-gem "aliyun_proxy"
-```
-
-And then execute:
-```bash
-$ bundle
-```
-
-Or install it yourself as:
-```bash
-$ gem install aliyun_proxy
+gem "aliyun_proxy", git: "git@github.com:as181920/aliyun_proxy.git", branch: "main"
 ```
 
 ## Contributing
