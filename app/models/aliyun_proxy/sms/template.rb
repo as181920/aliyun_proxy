@@ -20,11 +20,17 @@ module AliyunProxy
       digital: 7
     }
 
+    has_many :template_holder_maps, dependent: :destroy
+
     validates_presence_of :name, :state, :message_type, :content, :content_digest
     validates_uniqueness_of :template_code
 
     def calc_content_digest
       self.content_digest = Digest::MD5.hexdigest self.content.to_s
+    end
+
+    def holders
+      template_holder_maps.map(&:holder)
     end
   end
 end

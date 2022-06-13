@@ -19,7 +19,13 @@ module AliyunProxy
       brand_name: 5
     }, default: :unknown
 
+    has_many :sign_holder_maps, dependent: :destroy
+
     validates_presence_of :state, :source_type
     validates :name, presence: true, uniqueness: true
+
+    def holders
+      sign_holder_maps.map(&:holder)
+    end
   end
 end
