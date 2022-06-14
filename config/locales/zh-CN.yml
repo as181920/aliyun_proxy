@@ -12,6 +12,13 @@ zh-CN:
         state: "状态"
         reason: "审核备注"
         created_at: "创建时间"
+      aliyun_proxy/sms/sign/state:
+        ready: "已提交"
+        approving: "审核中"
+        approved: "审核通过"
+        rejected: "审核未通过"
+        cancelled: "已取消"
+        illegal: "无效"
       aliyun_proxy/sms/template:
         name: "模板名称"
         state: "状态"
@@ -20,3 +27,10 @@ zh-CN:
         template_code: "模板CODE"
         reason: "审核备注"
         created_at: "创建时间"
+      aliyun_proxy/sms/template/state:
+        ready: "已提交"
+        approving: "审核中"
+        approved: "审核通过"
+        rejected: "审核未通过"
+        cancelled: "已取消"
+        illegal: "无效"
