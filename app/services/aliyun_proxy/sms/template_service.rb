@@ -69,7 +69,7 @@ module AliyunProxy
             .tap { |tmpl| tmpl.state = STATE_MAP[info["TemplateStatus"] || info["AuditStatus"]] || tmpl.state }
             .tap { |tmpl| tmpl.message_type = type_map[info["TemplateType"]] }
             .tap { |tmpl| tmpl.reason = info["Reason"].is_a?(Hash) ? info.dig("Reason", "RejectInfo") : info["Reason"] }
-            .tap { |tmpl| tmpl.assign_attributes({ name: info["TemplateName"], content: info["TemplateContent"] }.compact_blank) }
+            .tap { |tmpl| tmpl.assign_attributes({ name: info["TemplateName"], content: info["TemplateContent"], created_at: info["CreateDate"] }.compact_blank) }
             .tap(&:save!)
         end
     end

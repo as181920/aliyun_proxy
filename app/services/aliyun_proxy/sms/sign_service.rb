@@ -52,6 +52,7 @@ module AliyunProxy
           Sign.find_or_initialize_by(name: sign_info["SignName"])
             .tap { |sign| sign.state = STATE_MAP[sign_info["SignStatus"] || sign_info["AuditStatus"]] || sign.state }
             .tap { |sign| sign.reason = sign_info["Reason"].is_a?(Hash) ? sign_info.dig("Reason", "RejectInfo") : sign_info["Reason"] }
+            .tap { |sign| sign.assign_attributes({ created_at: sign_info["CreateDate"] }.compact_blank) }
             .tap(&:save)
         end
     end

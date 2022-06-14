@@ -1,0 +1,22 @@
+---
+zh-CN:
+  aliyun_proxy:
+    engine: "阿里云服务"
+  activerecord:
+    models:
+      aliyun_proxy/sms/sign: "签名"
+      aliyun_proxy/sms/template: "模板"
+    attributes:
+      aliyun_proxy/sms/sign:
+        name: "签名名称"
+        state: "状态"
+        reason: "审核备注"
+        created_at: "创建时间"
+      aliyun_proxy/sms/template:
+        name: "模板名称"
+        state: "状态"
+        message_type: "模板类型"
+        content: "内容"
+        template_code: "模板CODE"
+        reason: "审核备注"
+        created_at: "创建时间"
