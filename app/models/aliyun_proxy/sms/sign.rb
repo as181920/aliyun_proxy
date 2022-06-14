@@ -24,6 +24,10 @@ module AliyunProxy
     validates_presence_of :state, :source_type
     validates :name, presence: true, uniqueness: true
 
+    def to_s
+      name
+    end
+
     def holders
       sign_holder_maps.map(&:holder)
     end
