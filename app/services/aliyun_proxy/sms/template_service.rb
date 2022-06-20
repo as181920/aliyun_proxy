@@ -27,10 +27,14 @@ module AliyunProxy
         7 => :digital
       }.freeze
 
-      def add
+      def add(template)
+        api_client.add_template(**template.slice(:name, :content, :remark).merge(template_type: QUERY_TYPE_MAP.invert[template.message_type.to_sym]))
+          .then { |info| template.update(template_code: info["TemplateCode"]) if info["TemplateCode"].present? }
       end
 
-      def modify
+      def modify(template)
+        api_client.add_template(**template.slice(:name, :template_code, :content, :remark).merge(template_type: QUERY_TYPE_MAP.invert[template.message_type.to_sym]))
+          .then { |info| info["Code"] == "OK" }
       end
 
       def delete(template_code)

@@ -1,7 +1,5 @@
 module AliyunProxy
   class Sms::Template < ApplicationRecord
-    before_validation :calc_content_digest
-
     enum :state, {
       ready: 0,
       approving: 1,
@@ -25,6 +23,8 @@ module AliyunProxy
     validates_presence_of :name, :state, :message_type, :content, :content_digest
     validates_uniqueness_of :template_code
 
+    before_validation :calc_content_digest
+    after_save_commit :sync_from_cloud
     after_destroy_commit :delete_from_cloud
 
     def to_s
@@ -39,8 +39,20 @@ module AliyunProxy
       template_holder_maps.map(&:holder)
     end
 
+    def sync_from_cloud
+      if template_code.present?
+        Sms::CloudTemplateAddJob.perform_later(self.id)
+      else
+        Sms::CloudTemplateModifyJob.perform_later(self.id)
+      end
+    end
+
     def delete_from_cloud
       Sms::CloudTemplateDeleteJob.perform_later(self.template_code)
     end
   end
 end
+
+# TODO
+# after_commit :update_wxpay_stock, on: :update
+# after_commit :empty_wxpay_stock, on: :destroy
