@@ -11,7 +11,7 @@ module AliyunProxy
     private
 
       def clean_holderless_template
-        template.destroy if template.holders.where.not(holder: self).empty?
+        template.destroy if template.template_holder_maps.where.not(holder: self).empty?
       end
   end
 end
