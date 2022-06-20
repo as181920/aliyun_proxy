@@ -33,7 +33,8 @@ module AliyunProxy
       def modify
       end
 
-      def delete
+      def delete(template_code)
+        api_client.delete_template(template_code)
       end
 
       def query(template_code)
@@ -57,6 +58,7 @@ module AliyunProxy
         end
 
         template_infos
+          .sort_by { |info| info["CreateDate"] }
           .map { |info| save_template(info, type_map: LIST_TYPE_MAP) }
           .tap { |templates| Sign.where.not(id: templates.map(&:id)).destroy_all }
           .then(&:size)

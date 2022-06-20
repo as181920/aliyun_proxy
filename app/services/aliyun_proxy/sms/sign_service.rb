@@ -41,6 +41,7 @@ module AliyunProxy
         end
 
         sign_infos
+          .sort_by { |sign_info| sign_info["CreateDate"] }
           .map { |sign_info| save_sign(sign_info) }
           .tap { |signs| Sign.where.not(id: signs.map(&:id)).destroy_all }
           .then(&:size)

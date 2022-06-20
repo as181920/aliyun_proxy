@@ -25,6 +25,8 @@ module AliyunProxy
     validates_presence_of :name, :state, :message_type, :content, :content_digest
     validates_uniqueness_of :template_code
 
+    after_destroy_commit :delete_from_cloud
+
     def to_s
       content
     end
@@ -35,6 +37,10 @@ module AliyunProxy
 
     def holders
       template_holder_maps.map(&:holder)
+    end
+
+    def delete_from_cloud
+      Sms::CloudTemplateDeleteJob.perform_later(self.template_code)
     end
   end
 end
