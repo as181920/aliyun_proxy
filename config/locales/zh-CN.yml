@@ -25,6 +25,7 @@ zh-CN:
         message_type: "模板类型"
         content: "模板内容"
         template_code: "模板CODE"
+        remark: "申请说明"
         reason: "审核备注"
         created_at: "创建时间"
       aliyun_proxy/sms/template/state:
