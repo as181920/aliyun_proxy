@@ -45,7 +45,7 @@ module AliyunProxy
       if template_code.present?
         Sms::CloudTemplateAddJob.perform_later(self.id)
       else
-        Sms::CloudTemplateModifyJob.perform_later(self.id)
+        self.approving! and Sms::CloudTemplateModifyJob.perform_later(self.id)
       end
     end
 
