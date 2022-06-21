@@ -29,7 +29,7 @@ module AliyunProxy
 
       def add(template)
         api_client.add_template(**template.slice(:name, :content, :remark).merge(template_type: QUERY_TYPE_MAP.invert[template.message_type.to_sym]).symbolize_keys)
-          .then { |info| template.update(template_code: info["TemplateCode"]) if info["TemplateCode"].present? }
+          .then { |info| template.update(template_code: info["TemplateCode"], state: :approving) if info["TemplateCode"].present? }
       end
 
       def modify(template)

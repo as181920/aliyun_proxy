@@ -21,7 +21,7 @@ module AliyunProxy
     has_many :template_holder_maps, dependent: :destroy
 
     validates_presence_of :name, :state, :message_type, :content, :content_digest
-    validates_uniqueness_of :template_code
+    validates_uniqueness_of :template_code, allow_blank: true
 
     before_validation :calc_content_digest
     after_save_commit :sync_to_cloud
@@ -42,7 +42,7 @@ module AliyunProxy
     def sync_to_cloud
       return if self.approved? || (self.previous_changes.keys & %w[message_type name content remark]).blank?
 
-      if template_code.present?
+      if template_code.blank?
         Sms::CloudTemplateAddJob.perform_later(self.id)
       else
         self.approving! and Sms::CloudTemplateModifyJob.perform_later(self.id)
