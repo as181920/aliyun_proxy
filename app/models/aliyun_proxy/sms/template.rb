@@ -40,8 +40,7 @@ module AliyunProxy
     end
 
     def sync_to_cloud
-      return if self.approved?
-      return unless (self.previous_changes.keys & %w[message_type name content remark]).present?
+      return if self.approved? || (self.previous_changes.keys & %w[message_type name content remark]).blank?
 
       if template_code.present?
         Sms::CloudTemplateAddJob.perform_later(self.id)
