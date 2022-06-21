@@ -24,7 +24,7 @@ module AliyunProxy
     validates_uniqueness_of :template_code
 
     before_validation :calc_content_digest
-    after_save_commit :sync_from_cloud
+    after_save_commit :sync_to_cloud
     after_destroy_commit :delete_from_cloud
 
     def to_s
@@ -39,7 +39,10 @@ module AliyunProxy
       template_holder_maps.map(&:holder)
     end
 
-    def sync_from_cloud
+    def sync_to_cloud
+      return if self.approved?
+      return unless (self.previous_changes.keys & %w[message_type name content remark]).present?
+
       if template_code.present?
         Sms::CloudTemplateAddJob.perform_later(self.id)
       else
