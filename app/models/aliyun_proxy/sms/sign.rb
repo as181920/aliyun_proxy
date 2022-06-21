@@ -24,12 +24,24 @@ module AliyunProxy
     validates_presence_of :state, :source_type
     validates :name, presence: true, uniqueness: true
 
+    after_save_commit :sync_to_cloud
+
     def to_s
       name
     end
 
     def holders
       sign_holder_maps.map(&:holder)
+    end
+
+    def sync_to_cloud
+      return if self.approved? || (self.previous_changes.keys & %w[source_type name remark file_list]).blank?
+
+      if ready?
+        Sms::CloudSignAddJob.perform_later(self.id)
+      else
+        self.approving! and Sms::CloudSignModifyJob.perform_later(self.id)
+      end
     end
   end
 end

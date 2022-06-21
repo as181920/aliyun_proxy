@@ -54,7 +54,3 @@ module AliyunProxy
     end
   end
 end
-
-# TODO
-# after_commit :update_wxpay_stock, on: :update
-# after_commit :empty_wxpay_stock, on: :destroy

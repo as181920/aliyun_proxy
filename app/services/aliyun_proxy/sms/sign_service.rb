@@ -11,13 +11,18 @@ module AliyunProxy
         2 => :rejected
       }.with_indifferent_access.freeze
 
-      def add
+      def add(sign)
+        api_client.add_sign(**sign.slice(:name, :remark, :file_list).merge(source: sign.source_type_before_type_cast).symbolize_keys)
+          .then { |info| sign.update(state: :approving) if info["Code"].eql?("OK") }
       end
 
       def modify
+        api_client.modify_sign(**sign.slice(:name, :remark, :file_list).merge(source: sign.source_type_before_type_cast).symbolize_keys)
+          .then { |info| info["Code"] == "OK" }
       end
 
-      def delete
+      def delete(name)
+        api_client.delete_sign(name)
       end
 
       def query(name)
