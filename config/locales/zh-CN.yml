@@ -27,7 +27,7 @@ zh-CN:
         illegal: "无效"
       aliyun_proxy/sms/sign/source_type:
         enterprise_name: "企事业单位的全称或简称"
-        website_name: "企事业单位的全称或简称"
+        website_name: "工信部备案网站的全称或简称"
         app_name: "App应用的全称或简称"
         wechat_name: "公众号或小程序的全称或简称"
         e_commerce_name: "电商平台店铺名的全称或简称"
