@@ -12,6 +12,7 @@ zh-CN:
         state: "状态"
         remark: "申请说明"
         reason: "审核备注"
+        file_list: "文件列表"
         created_at: "创建时间"
       aliyun_proxy/sms/sign/state:
         ready: "已提交"
