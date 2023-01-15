@@ -10,6 +10,7 @@ zh-CN:
       aliyun_proxy/sms/sign:
         name: "签名名称"
         state: "状态"
+        remark: "申请说明"
         reason: "审核备注"
         created_at: "创建时间"
       aliyun_proxy/sms/sign/state:
