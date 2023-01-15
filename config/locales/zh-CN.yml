@@ -10,6 +10,7 @@ zh-CN:
       aliyun_proxy/sms/sign:
         name: "签名名称"
         state: "状态"
+        source_type: "签名来源"
         remark: "申请说明"
         reason: "审核备注"
         file_list: "文件列表"
