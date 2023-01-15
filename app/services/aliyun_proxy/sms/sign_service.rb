@@ -74,7 +74,7 @@ module AliyunProxy
           original_file_values.map do |original_value|
             GlobalID::Locator.locate(original_value)&.then do |image|
               {
-                FileContents: Base64.strict_encode64(Faraday.get(Addressable::URI.parse(image.private_url).normalize).body),
+                FileContents: Base64.strict_encode64(Faraday.get(Addressable::URI.parse(image.private_url).normalize.to_s).body),
                 FileSuffix: (image.mime_type.to_s.split("/").last.presence || "jpg")
               }
             end
