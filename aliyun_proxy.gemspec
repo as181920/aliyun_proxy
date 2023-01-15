@@ -23,4 +23,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", ">= 7.0"
   spec.add_dependency "jbuilder"
   spec.add_dependency "faraday"
+  spec.add_dependency "addressable"
 end

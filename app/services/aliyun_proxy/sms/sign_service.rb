@@ -12,13 +12,21 @@ module AliyunProxy
       }.with_indifferent_access.freeze
 
       def add(sign)
-        api_client.add_sign(**sign.slice(:name, :remark, :file_list).merge(source: sign.source_type_before_type_cast).symbolize_keys)
-          .then { |info| sign.update(state: :approving) if info["Code"].eql?("OK") }
+        api_client.add_sign(
+          **sign.slice(:name, :remark).merge(
+            source: sign.source_type_before_type_cast,
+            file_list: base64_file_list(Hash(sign.file_list).values)
+          ).symbolize_keys
+        ).then { |info| sign.update(state: :approving) if info["Code"].eql?("OK") }
       end
 
       def modify
-        api_client.modify_sign(**sign.slice(:name, :remark, :file_list).merge(source: sign.source_type_before_type_cast).symbolize_keys)
-          .then { |info| info["Code"] == "OK" }
+        api_client.modify_sign(
+          **sign.slice(:name, :remark).merge(
+            source: sign.source_type_before_type_cast,
+            file_list: base64_file_list(Hash(sign.file_list).values)
+          ).symbolize_keys
+        ).then { |info| info["Code"] == "OK" }
       end
 
       def delete(name)
@@ -60,6 +68,17 @@ module AliyunProxy
             .tap { |sign| sign.reason = sign_info["Reason"].is_a?(Hash) ? sign_info.dig("Reason", "RejectInfo") : sign_info["Reason"] }
             .tap { |sign| sign.assign_attributes({ created_at: sign_info["CreateDate"] }.compact_blank) }
             .tap(&:save)
+        end
+
+        def base64_file_list(original_file_values)
+          original_file_values.map do |original_value|
+            GlobalID::Locator.locate(original_value)&.then do |image|
+              {
+                FileContents: Base64.strict_encode64(Faraday.get(Addressable::URI.parse(image.private_url).normalize).body),
+                FileSuffix: (image.mime_type.to_s.split("/").last.presence || "jpg")
+              }
+            end
+          end.compact_blank
         end
     end
   end
