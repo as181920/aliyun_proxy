@@ -10,14 +10,13 @@ module AliyunProxy
     }, default: :ready
 
     enum :source_type, {
-      unknown: 10,
       enterprise_name: 0,
       website_name: 1,
       app_name: 2,
       wechat_name: 3,
       e_commerce_name: 4,
       brand_name: 5
-    }, default: :unknown
+    }, default: :enterprise_name
 
     has_many :sign_holder_maps, dependent: :destroy
 

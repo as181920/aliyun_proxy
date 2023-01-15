@@ -20,6 +20,13 @@ zh-CN:
         rejected: "审核未通过"
         cancelled: "已取消"
         illegal: "无效"
+      aliyun_proxy/sms/sign/source_type:
+        enterprise_name: "企事业单位的全称或简称"
+        website_name: "企事业单位的全称或简称"
+        app_name: "App应用的全称或简称"
+        wechat_name: "公众号或小程序的全称或简称"
+        e_commerce_name: "电商平台店铺名的全称或简称"
+        brand_name: "商标名的全称或简称"
       aliyun_proxy/sms/template:
         name: "模板名称"
         state: "状态"
