@@ -14,6 +14,9 @@ zh-CN:
         reason: "审核备注"
         file_list: "文件列表"
         created_at: "创建时间"
+        business_license: "营业执照"
+        authorization_document: "授权委托书"
+        additional_document: "其它证明文件"
       aliyun_proxy/sms/sign/state:
         ready: "已提交"
         approving: "审核中"
