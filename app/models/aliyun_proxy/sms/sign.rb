@@ -23,6 +23,7 @@ module AliyunProxy
     validates_presence_of :state, :source_type
     validates :name, presence: true, uniqueness: true
 
+    before_validation :set_initial_attrs, on: :create
     after_save_commit :sync_to_cloud
 
     def to_s
@@ -42,5 +43,11 @@ module AliyunProxy
         self.approving! and Sms::CloudSignModifyJob.perform_later(self.id)
       end
     end
+
+    private
+
+      def set_initial_attrs
+        self.file_list ||= {}
+      end
   end
 end

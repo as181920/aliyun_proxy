@@ -15,16 +15,16 @@ module AliyunProxy
         api_client.add_sign(
           **sign.slice(:name, :remark).merge(
             source: sign.source_type_before_type_cast,
-            file_list: base64_file_list(Hash(sign.file_list).values)
+            file_list: base64_file_list(sign)
           ).symbolize_keys
         ).then { |info| sign.update(state: :approving) if info["Code"].eql?("OK") }
       end
 
-      def modify
+      def modify(sign)
         api_client.modify_sign(
           **sign.slice(:name, :remark).merge(
             source: sign.source_type_before_type_cast,
-            file_list: base64_file_list(Hash(sign.file_list).values)
+            file_list: base64_file_list()
           ).symbolize_keys
         ).then { |info| info["Code"] == "OK" }
       end
@@ -70,15 +70,17 @@ module AliyunProxy
             .tap(&:save)
         end
 
-        def base64_file_list(original_file_values)
-          original_file_values.map do |original_value|
-            GlobalID::Locator.locate(original_value)&.then do |image|
-              {
-                FileContents: Base64.strict_encode64(Faraday.get(Addressable::URI.parse(image.private_url).normalize.to_s).body),
-                FileSuffix: (image.mime_type.to_s.split("/").last.presence || "jpg")
-              }
-            end
-          end.compact_blank
+        def base64_file_list(sign)
+          Hash(sign.file_list)
+            .values_at("business_license_gid", "authorization_document_gid", "additional_document_gid")
+            .map do |gid|
+              GlobalID::Locator.locate(gid)&.then do |file|
+                {
+                  FileContents: Base64.strict_encode64(Faraday.get(Addressable::URI.parse(file.private_url).normalize.to_s).body),
+                  FileSuffix: (file.mime_type.to_s.split("/").last.presence || "jpg")
+                }
+              end
+            end.compact_blank
         end
     end
   end
