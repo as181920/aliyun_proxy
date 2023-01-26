@@ -35,6 +35,13 @@ module AliyunProxy
       self.content_digest = Digest::MD5.hexdigest self.content.to_s
     end
 
+    def estimated_content_length
+      ["签名", self.content, "回T退订"]
+        .map(&:to_s)
+        .join
+        .length
+    end
+
     def holders
       template_holder_maps.map(&:holder)
     end
