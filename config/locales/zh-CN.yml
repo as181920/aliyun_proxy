@@ -4,8 +4,8 @@ zh-CN:
     engine: "阿里云服务"
   activerecord:
     models:
-      aliyun_proxy/sms/sign: "签名"
-      aliyun_proxy/sms/template: "模板"
+      aliyun_proxy/sms/sign: "短信签名"
+      aliyun_proxy/sms/template: "短信模板"
     attributes:
       aliyun_proxy/sms/sign:
         name: "签名名称"
