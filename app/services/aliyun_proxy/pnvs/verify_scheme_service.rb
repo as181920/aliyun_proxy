@@ -15,6 +15,13 @@ module AliyunProxy
           params: { SchemeCode: scheme_code },
           opts: {}
       end
+
+      def show(scheme_code: "")
+        client.request \
+          action: "DescribeVerifyScheme",
+          params: { SchemeCode: scheme_code },
+          opts: {}
+      end
     end
   end
 end
