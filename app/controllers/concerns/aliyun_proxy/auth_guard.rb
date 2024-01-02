@@ -33,7 +33,7 @@ module AliyunProxy
       end
 
       def authenticate_user
-        send("authenticate_using_#{auth_params[:type].underscore}", auth_params[:value])&.tap { |u| session[:usr_user_id] = u.id }
+        send(:"authenticate_using_#{auth_params[:type].underscore}", auth_params[:value])&.tap { |u| session[:usr_user_id] = u.id }
       end
 
       def authenticate_using_basic(_credentials)
@@ -41,7 +41,7 @@ module AliyunProxy
       end
 
       def authenticate_using_plain_user_code(code_value)
-        credential_model&.find_by(code: code_value)&.tap { |cred| cred.regenerate_code }&.user
+        credential_model&.find_by(code: code_value)&.tap(&:regenerate_code)&.user
       end
 
       def authenticate_using_plain_user_token(token_value)
@@ -53,31 +53,31 @@ module AliyunProxy
       end
 
       def auth_params_from_header
-        return unless request.authorization.present?
+        return if request.authorization.blank?
 
-        HashWithIndifferentAccess.new.tap { |p| p[:type], p[:value] = request.authorization&.split }.tap do |p|
+        ActiveSupport::HashWithIndifferentAccess.new.tap { |p| p[:type], p[:value] = request.authorization&.split }.tap do |p|
           raise(InvalidAuthTypeError, "auth type not supported.") if SUPPORTED_AUTH_TYPES.exclude?(p[:type])
           raise(InvalidAuthValueError, "auth value is blank.") if p[:value].blank?
         end
       end
 
       def auth_params_from_url
-        p_key = [:auth_code, :auth_token, :wechat_oauth_code].detect { |k| params[k].present? }
-        { type: { auth_code: "PlainUserCode", auth_token: "PlainUserToken", wechat_oauth_code: "WechatOauthCode" }[p_key], value: params[p_key] } if p_key.present?
+        p_key = [:auth_code, :auth_token].detect { |k| request.query_parameters[k].present? }
+        { type: { auth_code: "PlainUserCode", auth_token: "PlainUserToken" }[p_key], value: request.query_parameters[p_key] } if p_key.present?
       end
 
       def user_model
-        ["OperationManagement::UserBaseEngine::User"].detect(&:safe_constantize)&.safe_constantize
+        ["UserAuth::User"].detect(&:safe_constantize)&.safe_constantize
       end
 
       def credential_model
-        ["OperationManagement::UserBaseEngine::Credential"].detect(&:safe_constantize)&.safe_constantize
+        ["UserAuth::User::Credential"].detect(&:safe_constantize)&.safe_constantize
       end
 
       def handle_authenticate_failure(error)
         logger.warn "#{error.class.name}: #{error.message}"
         respond_to do |format|
-          format.html { redirect_back fallback_location: root_path, alert: error.message }
+          format.html { render plain: "用户认证失败。", status: :unauthorized }
           format.json { render json: { error: { message: "#{error.class.name}: #{error.message}" } }, status: :unauthorized }
         end
       end

@@ -10,4 +10,9 @@ AliyunProxy::Engine.routes.draw do
       resources :message_reports, only: [:create]
     end
   end
+
+  namespace :pnvs do # Phone Number Verification Service
+    resources :auth_tokens, only: [:create]
+    resources :phones, only: [:create]
+  end
 end

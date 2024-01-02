@@ -1,6 +1,7 @@
 require "jbuilder"
 require "faraday"
 require "addressable/uri"
+require "aliyunsdkcore"
 
 module AliyunProxy
   class Engine < ::Rails::Engine

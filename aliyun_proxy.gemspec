@@ -24,4 +24,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "jbuilder"
   spec.add_dependency "faraday"
   spec.add_dependency "addressable"
+  spec.add_dependency "aliyunsdkcore"
 end
