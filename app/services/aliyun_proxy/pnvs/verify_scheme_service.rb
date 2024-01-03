@@ -1,7 +1,7 @@
 module AliyunProxy
   module Pnvs
     class VerifySchemeService < ApiBaseService
-      def create(params = { scheme_name: "一键登录认证方案", app_name: "阿里云通信", os_type: "H5", origin: "", url: "" })
+      def create(params = { scheme_name: "一键登录认证方案", app_name: "阿里云通信", os_type: "Web", origin: "", url: "" })
         client.request \
           action: "CreateVerifyScheme",
           params: params.stringify_keys.transform_keys(&:camelize),
