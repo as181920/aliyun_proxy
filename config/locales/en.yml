@@ -1,0 +1,66 @@
+---
+en:
+  aliyun_proxy:
+    engine: "Aliyun service"
+    flash:
+      not_authorized: "Permission not authorized."
+      created_successfully: "Successfully created."
+      create_failed: "Create failed."
+      updated_successfully: "Successfully updated."
+      update_failed: "Update failed."
+      destroyed_successfully: "Destroyed successfully"
+      destroy_failed: "Destroy fail"
+      get_pnvs_auth_token_failed: "Get auth token failed."
+  activerecord:
+    models:
+      aliyun_proxy/sms/sign: "SMS sign"
+      aliyun_proxy/sms/template: "SMS template"
+    attributes:
+      aliyun_proxy/sms/sign:
+        name: "Name"
+        state: "State"
+        source_type: "Source"
+        remark: "Remark"
+        reason: "Reason"
+        file_list: "File list"
+        created_at: "Created at"
+        business_license: "Business license"
+        authorization_document: "Authorization doc"
+        additional_document: "Additional doc"
+      aliyun_proxy/sms/sign/state:
+        ready: "Ready"
+        approving: "Approving"
+        approved: "Approved"
+        rejected: "Rejected"
+        cancelled: "Cancelled"
+        illegal: "Illegal"
+      aliyun_proxy/sms/sign/source_type:
+        enterprise_name: "Enterprise name"
+        website_name: "Website name"
+        app_name: "APP name"
+        wechat_name: "Wechat name"
+        e_commerce_name: "ECommerce name"
+        brand_name: "Brand name"
+      aliyun_proxy/sms/template:
+        name: "Name"
+        state: "State"
+        message_type: "Message type"
+        content: "Content"
+        template_code: "Template CODE"
+        remark: "Remark"
+        reason: "Reason"
+        created_at: "Created at"
+      aliyun_proxy/sms/template/state:
+        ready: "Ready"
+        approving: "Approving"
+        approved: "Approved"
+        rejected: "Rejected"
+        cancelled: "Cancelled"
+        illegal: "Illegal"
+      aliyun_proxy/sms/template/message_type:
+        unknown: "Unknown"
+        verification_code: "Verification code"
+        notification: "Notification"
+        promotion: "Promotion"
+        international: "International"
+        digital: "Digital"

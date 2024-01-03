@@ -2,6 +2,15 @@
 zh-CN:
   aliyun_proxy:
     engine: "阿里云服务"
+    flash:
+      not_authorized: "权限不足，请联系管理员"
+      created_successfully: "创建成功"
+      create_failed: "创建失败"
+      updated_successfully: "更新成功"
+      update_failed: "更新失败"
+      destroyed_successfully: "删除成功"
+      destroy_failed: "删除失败"
+      get_pnvs_auth_token_failed: "获取一键验证授权码失败"
   activerecord:
     models:
       aliyun_proxy/sms/sign: "短信签名"
