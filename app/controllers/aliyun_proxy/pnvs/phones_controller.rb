@@ -25,7 +25,7 @@ module AliyunProxy
         return if @phone_number.blank?
 
         if current_user.respond_to?(:phone)
-          current_user.phone.model.find_or_create_by(number: @phone_number).update(user: current_user)
+          current_user.build_phone.class.find_or_create_by(number: @phone_number).update(user: current_user)
         elsif user.respond_to?(:phones)
           current_user.phones.model.find_or_create_by(number: @phone_number).update(user: current_user)
         end
