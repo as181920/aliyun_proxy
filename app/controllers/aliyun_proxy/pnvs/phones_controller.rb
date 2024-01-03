@@ -9,7 +9,7 @@ module AliyunProxy
       ).get_number(sp_token: phone_params[:sp_token])&.dig("Data", "Mobile")
 
       if @phone_number.present?
-        render json: { phone: { user_id: current_user.id, phone_number: @phone_number } }, status: :ok
+        render json: { phone: { user_id: current_user.id, number: @phone_number } }, status: :ok
       else
         render json: { error: { message: "Mobile phone number not detected." } }, status: :bad_request
       end
