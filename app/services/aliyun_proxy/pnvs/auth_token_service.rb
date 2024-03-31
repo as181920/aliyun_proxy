@@ -11,12 +11,13 @@ module AliyunProxy
       private
 
         def detect_scene_code(url: "", origin: "")
-          VerifyScheme.success.find_by \
+          VerifyScheme.success.find_by(
             scheme_name: URI.parse(url).host,
             app_name: I18n.t("app_name", default: "CODE-LI"),
             os_type: "Web",
             origin:,
             url:
+          )&.scheme_code
         rescue StandardError => e
           Rails.logger.error "#{self.class.name} detect_scene_code #{e.class.name}: #{e.message}"
           nil
