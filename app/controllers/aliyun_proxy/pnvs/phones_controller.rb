@@ -13,6 +13,11 @@ module AliyunProxy
       else
         render json: { error: { message: "Mobile phone number not detected." } }, status: :bad_request
       end
+    rescue StandardError => e
+      logger.error "#{self.class.name} #{action_name} #{e.class.name}: #{e.message}"
+      error_info = e.message.match(/Code:\s*(.*?),\s*Message:\s*(.*?),\s*URL:\s*(.*)/)
+      _code, message, _url = error_info.captures
+      render json: { error: { message: } }, status: :bad_request
     end
 
     private
