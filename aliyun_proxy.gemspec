@@ -25,4 +25,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faraday"
   spec.add_dependency "addressable"
   spec.add_dependency "aliyunsdkcore"
+  spec.add_dependency "pundit"
 end

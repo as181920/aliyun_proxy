@@ -6,6 +6,7 @@ PATH
       aliyunsdkcore
       faraday
       jbuilder
+      pundit
       rails (>= 7.0)
 
 GEM
@@ -131,7 +132,6 @@ GEM
       net-http (>= 0.5.0)
     ffi (1.17.2-x86_64-linux-gnu)
     formatador (1.1.1)
-    gem-ctags (1.0.9)
     globalid (1.2.1)
       activesupport (>= 6.1)
     guard (2.19.1)
@@ -236,6 +236,8 @@ GEM
     public_suffix (6.0.2)
     puma (6.6.1)
       nio4r (~> 2.0)
+    pundit (2.5.2)
+      activesupport (>= 3.0.0)
     racc (1.8.1)
     rack (3.2.0)
     rack-session (2.1.1)
@@ -370,7 +372,6 @@ DEPENDENCIES
   aliyun_proxy!
   capybara
   debug
-  gem-ctags
   guard
   guard-bundler
   guard-minitest

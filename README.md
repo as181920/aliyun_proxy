@@ -1,7 +1,42 @@
 # AliyunProxy
-阿里云API服务对接
 
-## Usage
+阿里云服务的 Ruby/Rails 适配层。不同产品按服务目录和 namespace 隔离，例如短信使用
+`AliyunProxy::Sms`，号码认证使用 `AliyunProxy::Pnvs`，百炼使用
+`AliyunProxy::ModelStudio`。
+
+## Model Studio OCR
+
+`AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService` 封装百炼 Qwen-OCR 的
+`key_information_extraction` 内置任务。调用方提供图片 URL 或 Base64 Data URL，以及自身业务字段的
+`result_schema`；适配层只返回 `kv_result`，不把 HTTP 和供应商响应结构泄漏给业务 engine。
+协议与字段结构以阿里云[Qwen-OCR API 参考](https://help.aliyun.com/zh/model-studio/qwen-vl-ocr-api-reference)为准。
+
+阿里云 SDK 文档中的“本地文件路径”是 SDK 在调用进程内读取/上传文件的便利能力，不表示远端服务能读取
+Rails 服务器的本地路径。此 engine 直接调用 DashScope HTTP：私有上传文件应先转为官方支持的 Base64
+Data URL；已有安全公开地址的图片也可直接传 URL。接口不是 multipart 二进制上传。
+Qwen-OCR 对 Base64 输入限制的是编码后的 Data URL 大小；调用方应预留 Base64 约三分之一的体积膨胀，
+不能直接沿用公网 URL 模式的原文件上限。
+
+```ruby
+result = AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService.call(
+  image: "data:image/jpeg;base64,...",
+  result_schema: {
+    "contact_name" => "名片持有人的姓名",
+    "company_name" => "公司全称"
+  }
+)
+```
+
+生产环境配置：
+
+- `aliyun_model_studio_api_key`：百炼 API Key；也兼容官方 `DASHSCOPE_API_KEY`。
+- `aliyun_model_studio_workspace_id`：华北 2（北京）业务空间 ID，用于生成 workspace 专属域名。
+- `aliyun_model_studio_api_base_url`：可选。其它地域时配置 API origin，例如
+  `https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com`（不要附加 `/api/v1`）；配置后无需
+  `aliyun_model_studio_workspace_id`。
+- `aliyun_model_studio_ocr_model`：可选，默认 `qwen3.5-ocr`。
+
+请求使用 3 秒连接超时和 30 秒读取超时。API Key 不进入业务参数、日志或响应。
 
 ## Installation
 Add this line to your application's Gemfile:

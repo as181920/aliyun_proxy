@@ -4,7 +4,6 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 gemspec
 
 gem "debug"
-gem "gem-ctags"
 gem "rubocop"
 gem "rubocop-capybara", require: false
 gem "rubocop-erb"
