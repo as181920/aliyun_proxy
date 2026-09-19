@@ -45,7 +45,21 @@ module AliyunProxy
         end
 
         def api_base_url
-          ENV["aliyun_model_studio_api_base_url"].to_s.strip.presence || default_api_base_url
+          configured_url = ENV["aliyun_model_studio_api_base_url"].to_s.strip.presence
+          return default_api_base_url unless configured_url
+
+          normalize_api_base_url(configured_url)
+        end
+
+        def normalize_api_base_url(value)
+          uri = URI.parse(value.match?(%r{\A[a-z][a-z0-9+.-]*://}i) ? value : "https://#{value}")
+          valid_origin = uri.is_a?(URI::HTTPS) && uri.host.present? && uri.userinfo.nil? &&
+            uri.path.in?(["", "/"]) && uri.query.nil? && uri.fragment.nil?
+          return uri.to_s.delete_suffix("/") if valid_origin
+
+          raise ConfigurationError, "Alibaba Cloud Model Studio API base URL must be a valid HTTPS origin"
+        rescue URI::InvalidURIError
+          raise ConfigurationError, "Alibaba Cloud Model Studio API base URL must be a valid HTTPS origin"
         end
 
         def default_api_base_url

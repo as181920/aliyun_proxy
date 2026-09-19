@@ -33,7 +33,8 @@ result = AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService.call(
 - `aliyun_model_studio_workspace_id`：华北 2（北京）业务空间 ID，用于生成 workspace 专属域名。
 - `aliyun_model_studio_api_base_url`：可选。其它地域时配置 API origin，例如
   `https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com`（不要附加 `/api/v1`）；配置后无需
-  `aliyun_model_studio_workspace_id`。
+  `aliyun_model_studio_workspace_id`。推荐填写完整 HTTPS origin；只填写域名时会自动使用 HTTPS。
+  首尾空白和末尾 `/` 会被规范化；HTTP、用户凭据、业务路径、query 和 fragment 均不接受。
 - `aliyun_model_studio_ocr_model`：可选，默认 `qwen3.5-ocr`。
 
 请求使用 3 秒连接超时和 30 秒读取超时。API Key 不进入业务参数、日志或响应。

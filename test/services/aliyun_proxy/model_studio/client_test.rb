@@ -12,6 +12,7 @@ module AliyunProxy
 
       setup do
         @original_environment = ENVIRONMENT_KEYS.to_h { |key| [key, ENV[key]] }
+        ENVIRONMENT_KEYS.each { |key| ENV.delete(key) }
         ENV["aliyun_model_studio_api_key"] = "test-api-key"
         ENV["aliyun_model_studio_workspace_id"] = "workspace-123"
       end
@@ -40,6 +41,31 @@ module AliyunProxy
         Client.new.post("/example", payload: {})
 
         assert_requested request
+      end
+
+      ["model-studio.example.com", "https://model-studio.example.com/", "  model-studio.example.com/  "].each do |base_url|
+        test "normalizes configured API origin #{base_url.inspect}" do
+          ENV["aliyun_model_studio_api_base_url"] = base_url
+          ENV.delete("aliyun_model_studio_workspace_id")
+          request = stub_request(:post, "https://model-studio.example.com/example").to_return(status: 200, body: {}.to_json)
+
+          Client.new.post("/example", payload: {})
+
+          assert_requested request
+        end
+      end
+
+      [
+        "http://model-studio.example.com", "https://model-studio.example.com/api/v1",
+        "https://user:secret@model-studio.example.com",
+        "https://model-studio.example.com?key=value", "https://model-studio.example.com#fragment",
+        "https://", "not a domain"
+      ].each do |base_url|
+        test "rejects invalid API origin #{base_url.inspect}" do
+          ENV["aliyun_model_studio_api_base_url"] = base_url
+
+          assert_raises(ConfigurationError) { Client.new.post("/example", payload: {}) }
+        end
       end
 
       test "raises a configuration error without an API key" do
