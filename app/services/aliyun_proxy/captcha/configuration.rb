@@ -25,7 +25,7 @@ module AliyunProxy::Captcha
       def base_url
         value = ENV["aliyun_captcha_base_url"].to_s.presence || ENV["app_frontend_base_url"].to_s
         uri = valid_url(value)
-        raise ArgumentError, "CAPTCHA base URL must be an origin" unless [nil, "", "/"].include?(uri.path) && uri.query.nil? && uri.fragment.nil?
+        raise ArgumentError, "CAPTCHA base URL must be an origin" unless origin_only?(uri)
 
         origin(uri)
       end
@@ -34,12 +34,30 @@ module AliyunProxy::Captcha
         uri = valid_url(value)
         origins = ENV.fetch("aliyun_captcha_return_origins", "").split(",").map(&:strip)
         origins << origin(URI(base_url))
-        raise ArgumentError, "Return URL origin is not allowed" unless origins.include?(origin(uri))
+        raise ArgumentError, "Return URL origin is not allowed" unless origins.any? { |allowed| matches_origin?(uri, allowed) }
 
         uri.to_s
       end
 
       private
+
+        def matches_origin?(uri, value)
+          allowed = URI.parse(value)
+          return false unless origin_only?(allowed) && uri.scheme == allowed.scheme && uri.port == allowed.port
+
+          host = uri.host.downcase
+          allowed_host = allowed.host.to_s.downcase
+          return host == allowed_host unless allowed_host.start_with?("*.")
+
+          suffix = allowed_host.delete_prefix("*")
+          host.end_with?(suffix) && host.delete_suffix(suffix).match?(/\A[a-z0-9-]+(?:\.[a-z0-9-]+)*\z/)
+        rescue URI::InvalidURIError
+          false
+        end
+
+        def origin_only?(uri)
+          uri.userinfo.nil? && [nil, "", "/"].include?(uri.path) && uri.query.nil? && uri.fragment.nil?
+        end
 
         def valid_url(value)
           uri = URI.parse(value.to_s)
