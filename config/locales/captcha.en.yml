@@ -2,9 +2,10 @@ en:
   aliyun_proxy:
     captcha:
       title: "Security verification"
-      description: "Verify to continue."
+      description: "You'll continue automatically."
       loading: "Loading verification…"
-      continue: "Verify and continue"
+      verifying: "Verifying…"
+      retry: "Try again"
       checking: "Confirming verification…"
       failed: "Verification failed. Please try again."
       unavailable: "Verification is unavailable. Please try again later."

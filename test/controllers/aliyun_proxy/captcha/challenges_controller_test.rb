@@ -38,6 +38,13 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
     assert_equal "no-store", response.headers["Cache-Control"]
   end
 
+  test "page renders a hidden SDK trigger and a disabled progress control" do
+    get :show, params: { id: @challenge.id }
+
+    assert_select "#captcha-trigger[hidden]"
+    assert_select "#captcha-button[disabled]", text: I18n.t("aliyun_proxy.captcha.loading")
+  end
+
   test "page rejects a different browser" do
     session[:aliyun_captcha_browser_key] = "another-browser"
     get :show, params: { id: @challenge.id }
