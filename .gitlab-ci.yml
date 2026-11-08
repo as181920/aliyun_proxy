@@ -1,0 +1,26 @@
+before_script:
+  - |
+    runtoo_ruby_version="$(tr -d '[:space:]' < .ruby-version)"
+    runtoo_ruby_version="${runtoo_ruby_version#ruby-}"
+    runtoo_node_version="$(tr -d '[:space:]' < .nvmrc)"
+    mise install "ruby@${runtoo_ruby_version}" "node@${runtoo_node_version}"
+    runtoo_mise_env="$(mise env --shell bash "ruby@${runtoo_ruby_version}" "node@${runtoo_node_version}")"
+    eval "${runtoo_mise_env}"
+  - ruby -v
+  - node -v
+  - bundle install -j $(nproc)
+
+stages:
+  - test
+
+verify:
+  stage: test
+  variables:
+    RAILS_ENV: test
+  script:
+    - export DATABASE_URL="${TEST_DATABASE_URL:?Set the dedicated PostgreSQL test database URL}"
+    - bundle exec ruby -ruri -e 'abort "Test database name must end in _test" unless URI(ENV.fetch("DATABASE_URL")).path.end_with?("_test")'
+    - bin/rails rubocop
+    - bin/rails app:db:prepare
+    - bin/rails test
+    - node --test test/javascript/*.mjs

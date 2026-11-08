@@ -4,6 +4,8 @@ git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 ruby "4.0.9"
 
 gemspec
+
+gem "easy_style", git: "git@gitlab.dd-life.com:corp.front_end/easy_style_engine.git", branch: "main"
 gem "rails", ">= 8.1.4.1"
 
 gem "debug"

@@ -1,3 +1,6 @@
+require "accept_language"
+require "easy_style"
+require "with_advisory_lock"
 require "jbuilder"
 require "faraday"
 require "addressable/uri"
@@ -7,6 +10,10 @@ require "pundit"
 module AliyunProxy
   class Engine < ::Rails::Engine
     isolate_namespace AliyunProxy
+
+    initializer "aliyun_proxy.captcha_parameter_filters" do |app|
+      app.config.filter_parameters += %i[verify_param captcha_verify_param captcha_challenge challenge_url aliyun_captcha_ekey]
+    end
 
     initializer :append_migrations do |app|
       unless app.root.to_s.match root.to_s

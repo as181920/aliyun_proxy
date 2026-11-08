@@ -1,0 +1,79 @@
+<div id="captcha-element"></div>
+<button id="captcha-button" type="button" class="acv-submit" disabled><%= t("aliyun_proxy.captcha.loading") %></button>
+<p id="captcha-status" class="acv-status" role="status" aria-live="polite"></p>
+<%= link_to @cancel_url, class: "acv-back" do %><%= t("aliyun_proxy.captcha.cancel") %><% end %>
+<script nonce="<%= content_security_policy_nonce %>">
+(() => {
+  const button = document.getElementById('captcha-button');
+  const status = document.getElementById('captcha-status');
+  const text = <%= raw json_escape({  continue: t("aliyun_proxy.captcha.continue"), unavailable: t("aliyun_proxy.captcha.unavailable"), failed: t("aliyun_proxy.captcha.failed"), checking: t("aliyun_proxy.captcha.checking")  }.to_json) %>;
+  const options = <%= raw json_escape(@client_options.to_json) %>;
+  window.AliyunCaptchaConfig = { region: 'cn', prefix: <%= raw json_escape(@prefix.to_json) %> };
+  let disposed = false;
+  let captcha, readyTimer, script;
+  const pendingRequest = new AbortController();
+  const active = () => !disposed && button.isConnected;
+  const cleanup = () => {
+    if (disposed) return;
+    disposed = true;
+    window.clearTimeout(readyTimer);
+    pendingRequest.abort();
+    captcha?.hide?.();
+    if (script) {
+      script.onload = script.onerror = null;
+      script.remove();
+    }
+    document.removeEventListener('turbo:before-cache', cleanup);
+    document.removeEventListener('turbo:before-render', cleanup);
+  };
+  document.addEventListener('turbo:before-cache', cleanup);
+  document.addEventListener('turbo:before-render', cleanup);
+
+  const initialize = () => {
+    if (!active()) return;
+    window.initAliyunCaptcha({
+      ...options, mode: 'popup', element: '#captcha-element', button: '#captcha-button',
+      getInstance: (instance) => {
+        if (!active()) { instance.hide?.(); return; }
+        captcha = instance;
+        readyTimer = window.setTimeout(() => {
+          if (!active()) return;
+          button.disabled = false;
+          button.textContent = text.continue;
+        }, 2000);
+      },
+      fail: () => { if (active()) status.textContent = text.failed; },
+      onError: () => { if (active()) status.textContent = text.unavailable; },
+      success: async (parameter) => {
+        if (!active()) return;
+        button.disabled = true;
+        status.textContent = text.checking;
+        try {
+          const response = await fetch(<%= raw json_escape(captcha_verification_path.to_json) %>, {
+            method: 'PATCH', credentials: 'same-origin', signal: pendingRequest.signal,
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
+            body: JSON.stringify({ captcha: { verify_param: parameter } })
+          });
+          const result = await response.json();
+          if (!active()) return;
+          if (response.ok && result.redirect_url) { window.location.replace(result.redirect_url); return; }
+          status.textContent = result.error?.message || text.failed;
+        } catch (_) {
+          if (!active()) return;
+          status.textContent = text.unavailable;
+        }
+        initialize();
+      }
+    });
+  };
+  if (typeof window.initAliyunCaptcha === 'function') {
+    initialize();
+  } else {
+    script = document.createElement('script');
+    script.src = 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js';
+    script.onerror = () => { if (active()) status.textContent = text.unavailable; };
+    script.onload = initialize;
+    document.head.appendChild(script);
+  }
+})();
+</script>

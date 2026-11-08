@@ -20,7 +20,10 @@ Gem::Specification.new do |spec|
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end
 
+  spec.add_dependency "accept_language"
   spec.add_dependency "rails", ">= 7.0"
+  spec.add_dependency "easy_style"
+  spec.add_dependency "with_advisory_lock"
   spec.add_dependency "jbuilder"
   spec.add_dependency "faraday"
   spec.add_dependency "addressable"

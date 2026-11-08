@@ -1,5 +1,11 @@
 AliyunProxy::Engine.routes.draw do
   get "welcome/index"
+
+  get "api-docs/openapi.json", to: "captcha/api_docs#show", as: :openapi_spec
+
+  namespace :captcha do
+    resources :challenges, only: %i[show update]
+  end
   root "welcome#index"
 
   namespace :sms do

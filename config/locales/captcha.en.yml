@@ -1,0 +1,15 @@
+en:
+  aliyun_proxy:
+    captcha:
+      title: "Security verification"
+      description: "Verify to continue."
+      loading: "Loading verification…"
+      continue: "Verify and continue"
+      checking: "Confirming verification…"
+      failed: "Verification failed. Please try again."
+      unavailable: "Verification is unavailable. Please try again later."
+      expired: "Verification expired. Return and start again."
+      cancel: "Go back"
+      browser_mismatch: "Verification session does not match. Return and start again."
+      required: "Complete security verification to continue."
+      cancelled: "Verification cancelled. Sign in again or return to your previous page."

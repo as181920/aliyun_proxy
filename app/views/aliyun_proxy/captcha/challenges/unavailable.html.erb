@@ -1,0 +1,4 @@
+<h2 role="alert"><%= @message %></h2>
+<% if @challenge %>
+  <%= link_to t("aliyun_proxy.captcha.cancel"), @challenge.return_url(captcha_challenge: @challenge.id, captcha_status: "cancelled"), class: "acv-back" %>
+<% end %>

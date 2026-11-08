@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="<%= I18n.locale %>">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <meta name="turbo-cache-control" content="no-cache">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= es_module_shims %>
+    <%= javascript_importmap_tags "easy_style/application" %>
+    <%= javascript_import_module_tag "easy_style/turbo" %>
+    <title><%= t("aliyun_proxy.captcha.title") %></title>
+    <%= stylesheet_link_tag "easy_style/common", "data-turbo-track": "dynamic" %>
+    <%= render "aliyun_proxy/captcha/styles" %>
+  </head>
+  <body class="acv-page">
+    <main class="acv-main" aria-labelledby="captcha-heading">
+      <div class="acv-art" aria-hidden="true">
+        <svg viewBox="0 0 160 168" fill="none">
+          <defs><linearGradient id="acv-shield" x1="36" y1="24" x2="125" y2="151" gradientUnits="userSpaceOnUse"><stop stop-color="#fffaf5"/><stop offset="1" stop-color="#f5e5d6"/></linearGradient></defs>
+          <circle cx="80" cy="80" r="68" stroke="#f0e4d8" stroke-dasharray="3 8"/>
+          <path d="m80 23 46 19v34c0 29-18 50-46 67-28-17-46-38-46-67V42l46-19Z" fill="url(#acv-shield)" stroke="#dec3a8" stroke-width="1.3"/>
+          <path d="m80 35 35 15v26c0 23-13 40-35 54-22-14-35-31-35-54V50l35-15Z" stroke="#fff"/>
+          <rect x="64" y="73" width="32" height="27" rx="8" fill="#edceb2"/>
+          <path d="M70 73v-7a10 10 0 0 1 20 0v7M80 84v6" stroke="#9c7655" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="137" cy="57" r="4" fill="#eddcc9"/><circle cx="25" cy="113" r="3" fill="#eddcc9"/>
+        </svg>
+      </div>
+      <h1 id="captcha-heading"><%= t("aliyun_proxy.captcha.title") %></h1>
+      <p class="acv-description"><%= t("aliyun_proxy.captcha.description") %></p>
+      <section class="acv-workspace" aria-label="<%= t("aliyun_proxy.captcha.title") %>">
+        <%= yield %>
+      </section>
+    </main>
+  </body>
+</html>
