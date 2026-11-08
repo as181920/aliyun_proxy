@@ -1,7 +1,10 @@
 source "https://rubygems.org"
 git_source(:github) { |repo| "https://github.com/#{repo}.git" }
 
+ruby "4.0.9"
+
 gemspec
+gem "rails", ">= 8.1.4.1"
 
 gem "debug"
 gem "rubocop"
