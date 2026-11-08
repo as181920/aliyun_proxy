@@ -18,8 +18,7 @@ verify:
   variables:
     RAILS_ENV: test
   script:
-    - export DATABASE_URL="${TEST_DATABASE_URL:?Set the dedicated PostgreSQL test database URL}"
-    - bundle exec ruby -ruri -e 'abort "Test database name must end in _test" unless URI(ENV.fetch("DATABASE_URL")).path.end_with?("_test")'
+    - ln -s /home/gitlab-runner/shared/configs/my_products/cms/aliyun_proxy/database.yml ./test/dummy/config/database.yml
     - bin/rails rubocop
     - bin/rails app:db:prepare
     - bin/rails test

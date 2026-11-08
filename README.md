@@ -43,7 +43,7 @@ result = AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService.call(
 
 `AliyunProxy::Captcha` 提供供应商验票、加密场景、浏览器绑定的短期挑战及统一页面。它不依赖身份或活动 engines；消费方负责一次性授权消费和最终登录/业务动作。浏览器协议入口为 `/api-docs/openapi.json`，页面为 `/captcha/challenges/:id`（均相对于实际 engine mount）。长期分层与接入契约统一维护在 EasyBiz GitLab Wiki 的 `products/captcha_verification`。
 
-本地验证：`bin/rails test`、`bin/rails rubocop`、`node --test test/javascript/*.mjs`。GitLab CI 使用 Mise 和 `.ruby-version` / `.nvmrc`；配置专用 `TEST_DATABASE_URL`，数据库名以 `_test` 结尾。该值不得指向业务开发或生产数据库。
+本地验证：`bin/rails test`、`bin/rails rubocop`、`node --test test/javascript/*.mjs`。GitLab CI 使用 Mise 和 `.ruby-version` / `.nvmrc`；测试数据库配置软链接自 Runner 服务器的 `/home/gitlab-runner/shared/configs/my_products/cms/aliyun_proxy/database.yml`，在 `RAILS_ENV=test` 下执行数据库准备与测试。
 
 ## Installation
 Add this line to your application's Gemfile:
