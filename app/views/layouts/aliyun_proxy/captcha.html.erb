@@ -28,7 +28,7 @@
         </svg>
       </div>
       <h1 id="captcha-heading"><%= t("aliyun_proxy.captcha.title") %></h1>
-      <p class="acv-description"><%= t("aliyun_proxy.captcha.description") %></p>
+      <p class="acv-description"><%= content_for?(:captcha_description) ? yield(:captcha_description) : t("aliyun_proxy.captcha.description") %></p>
       <section class="acv-workspace" aria-label="<%= t("aliyun_proxy.captcha.title") %>">
         <%= yield %>
       </section>
