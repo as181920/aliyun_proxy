@@ -99,6 +99,15 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
     assert @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
   end
 
+  test "browser binding checks the current state under the state lock" do
+    stale_challenge = AliyunProxy::Captcha::Challenge.find(@challenge.id)
+    verify
+    @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { stale_challenge.bind_browser!(key: "this-browser") }
+    assert_predicate @challenge, :consumed?
+  end
+
   test "merchant identity and a distinct login purpose use the same challenge primitive" do
     ENV["aliyun_captcha_login_scene_id"] = "merchant-scene"
     challenge = AliyunProxy::Captcha::Challenge.issue(scene: "login", identity: "gid://test/TenantAuth::User/10", purpose: "tenant_login", resource: "tenant-session", return_url: "https://activity.example.com/")

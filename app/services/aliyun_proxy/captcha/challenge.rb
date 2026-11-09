@@ -68,6 +68,7 @@ module AliyunProxy::Captcha
 
       stored = with_state_lock do
         current = self.class.find(id)
+        raise Expired unless current.attributes["state"].in?(%w[issued verified])
         raise BrowserMismatch if current.attributes["browser_key"].present? && !current.browser_matches?(key)
 
         Rails.cache.write(self.class.key(id), current.attributes.merge("browser_key" => key), expires_in: remaining)
