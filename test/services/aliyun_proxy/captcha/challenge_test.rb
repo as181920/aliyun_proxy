@@ -20,7 +20,7 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
   test "verification is bound to provider certify id" do
     provider_result(certify_id: "different")
 
-    assert_raises(AliyunProxy::Captcha::Challenge::VerificationFailed) { @challenge.verify!(parameter: "opaque") }
+    assert_raises(AliyunProxy::Captcha::Challenge::VerificationFailed) { @challenge.verify(parameter: "opaque") }
     refute_predicate @challenge, :verified?
   end
 
@@ -28,21 +28,21 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
     test "automatic fallback #{code} does not authorize a reward" do
       provider_result(code:)
 
-      assert_raises(AliyunProxy::Captcha::Challenge::VerificationFailed) { @challenge.verify!(parameter: "opaque") }
+      assert_raises(AliyunProxy::Captcha::Challenge::VerificationFailed) { @challenge.verify(parameter: "opaque") }
     end
   end
 
   test "verified authorization can be consumed only once" do
     verify
 
-    assert @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
-    refute @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+    assert @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+    refute @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
   end
 
   test "concurrent consumers cannot both authorize" do
     verify
     results = 2.times.map do
-      Thread.new { @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher") }
+      Thread.new { @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher") }
     end.map(&:value)
 
     assert_equal({ true => 1, false => 1 }, results.tally)
@@ -51,22 +51,22 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
   test "user cannot transfer a passed challenge to another user" do
     verify
 
-    refute @challenge.consume!(identity: "gid://test/User/11", purpose: "reward_draw", resource: "campaign:voucher")
+    refute @challenge.consume(identity: "gid://test/User/11", purpose: "reward_draw", resource: "campaign:voucher")
   end
 
   test "cannot transfer passed verification to another voucher or purpose" do
     verify
 
-    refute @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:another-voucher")
-    refute @challenge.consume!(identity: @identity, purpose: "login", resource: "campaign:voucher")
+    refute @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:another-voucher")
+    refute @challenge.consume(identity: @identity, purpose: "login", resource: "campaign:voucher")
   end
 
   test "unverified and expired challenges cannot authorize" do
-    refute @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+    refute @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
     verify
     travel 11.minutes do
       assert_raises(AliyunProxy::Captcha::Challenge::Expired) { AliyunProxy::Captcha::Challenge.find(@challenge.id) }
-      refute @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+      refute @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
     end
   end
 
@@ -95,16 +95,16 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
   test "same numeric id from another identity namespace cannot consume authorization" do
     verify
 
-    refute @challenge.consume!(identity: "gid://test/TenantAuth::User/10", purpose: "reward_draw", resource: "campaign:voucher")
-    assert @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+    refute @challenge.consume(identity: "gid://test/TenantAuth::User/10", purpose: "reward_draw", resource: "campaign:voucher")
+    assert @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
   end
 
   test "browser binding checks the current state under the state lock" do
     stale_challenge = AliyunProxy::Captcha::Challenge.find(@challenge.id)
     verify
-    @challenge.consume!(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+    @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
 
-    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { stale_challenge.bind_browser!(key: "this-browser") }
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { stale_challenge.bind_browser(key: "this-browser") }
     assert_predicate @challenge, :consumed?
   end
 
@@ -112,12 +112,28 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
     ENV["aliyun_captcha_login_scene_id"] = "merchant-scene"
     challenge = AliyunProxy::Captcha::Challenge.issue(scene: "login", identity: "gid://test/TenantAuth::User/10", purpose: "tenant_login", resource: "tenant-session", return_url: "https://activity.example.com/")
     provider_result(certify_id: challenge.attributes["certify_id"])
-    challenge.verify!(parameter: "opaque")
+    challenge.verify(parameter: "opaque")
 
-    assert challenge.consume!(identity: "gid://test/TenantAuth::User/10", purpose: "tenant_login", resource: "tenant-session")
-    refute challenge.consume!(identity: "gid://test/TenantAuth::User/10", purpose: "tenant_login", resource: "tenant-session")
+    assert challenge.consume(identity: "gid://test/TenantAuth::User/10", purpose: "tenant_login", resource: "tenant-session")
+    refute challenge.consume(identity: "gid://test/TenantAuth::User/10", purpose: "tenant_login", resource: "tenant-session")
   ensure
     ENV.delete("aliyun_captcha_login_scene_id")
+  end
+
+  test "revoking a verified challenge prevents later authorization" do
+    verify
+    @challenge.revoke
+
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { AliyunProxy::Captcha::Challenge.find(@challenge.id) }
+    refute @challenge.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+  end
+
+  test "an old challenge instance cannot resurrect revoked verification" do
+    stale = AliyunProxy::Captcha::Challenge.find(@challenge.id)
+    @challenge.revoke
+    provider_result
+
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { stale.verify(parameter: "opaque") }
   end
 
   private
@@ -128,6 +144,6 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
 
     def verify
       provider_result
-      @challenge.verify!(parameter: "opaque")
+      @challenge.verify(parameter: "opaque")
     end
 end

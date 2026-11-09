@@ -29,7 +29,7 @@ module AliyunProxy::Captcha
         raise Expired unless id.to_s.match?(/\A[A-Za-z0-9_-]{43}\z/)
 
         attributes = Rails.cache.read(key(id))
-        raise Expired unless attributes && attributes.fetch("expires_at") > Time.current.to_i
+        raise Expired unless attributes && attributes.fetch("expires_at") > Time.current.to_i && attributes["state"] != "revoked"
 
         new(id, attributes)
       end
@@ -42,6 +42,20 @@ module AliyunProxy::Captcha
     def initialize(id, attributes)
       @id = id
       @attributes = attributes
+    end
+
+    def revoke
+      stored = with_state_lock do
+        current = self.class.find(id)
+        next true if current.consumed?
+
+        Rails.cache.write(self.class.key(id), current.attributes.merge("state" => "revoked"), expires_in: remaining)
+      end
+      raise StorageUnavailable unless stored
+
+      true
+    rescue Expired
+      false
     end
 
     def identity
@@ -63,7 +77,7 @@ module AliyunProxy::Captcha
       expected.present? && key.present? && ActiveSupport::SecurityUtils.secure_compare(expected, key)
     end
 
-    def bind_browser!(key:)
+    def bind_browser(key:)
       raise BrowserMismatch if key.blank?
 
       stored = with_state_lock do
@@ -79,7 +93,7 @@ module AliyunProxy::Captcha
       self
     end
 
-    def verify!(parameter:)
+    def verify(parameter:)
       raise VerificationFailed if consumed?
       return true if verified?
 
@@ -98,7 +112,7 @@ module AliyunProxy::Captcha
       true
     end
 
-    def consume!(identity:, purpose:, resource:)
+    def consume(identity:, purpose:, resource:)
       match = identity.to_s == self.identity && purpose == self.purpose && resource == attributes.fetch("resource")
       return false unless match && verified? && attributes.fetch("expires_at") > Time.current.to_i
 

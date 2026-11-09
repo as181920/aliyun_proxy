@@ -16,7 +16,7 @@ module AliyunProxy
     end
 
     def update
-      @challenge.verify!(parameter: params.require(:captcha).fetch(:verify_param).to_s)
+      @challenge.verify(parameter: params.require(:captcha).fetch(:verify_param).to_s)
       @redirect_url = @challenge.return_url(captcha_challenge: @challenge.id)
       render "verified"
     rescue Captcha::Challenge::VerificationFailed, ActionController::ParameterMissing, KeyError, ArgumentError
@@ -31,7 +31,7 @@ module AliyunProxy
         response.headers["Cache-Control"] = "no-store"
         response.headers["Referrer-Policy"] = "no-referrer"
         @challenge = Captcha::Challenge.find(params[:id])
-        raise Captcha::Challenge::BrowserMismatch unless @challenge.browser_matches?(session[:aliyun_captcha_browser_key])
+        raise Captcha::Challenge::BrowserMismatch unless @challenge.browser_matches?(Captcha::BrowserBinding.key(session, create: false))
       end
 
       def expired_challenge

@@ -13,8 +13,8 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
     }
     @original = @settings.to_h { |key, _| [key, ENV[key]] }
     ENV.update(@settings)
-    session[:aliyun_captcha_browser_key] = "this-browser"
-    @challenge = AliyunProxy::Captcha::Challenge.issue(identity: "opaque-identity", scene: "login", purpose: "consumer-purpose", resource: "opaque-resource", browser_key: "this-browser", return_url: "https://www.example.com/consumer-callback")
+    browser_key = AliyunProxy::Captcha::BrowserBinding.key(session)
+    @challenge = AliyunProxy::Captcha::Challenge.issue(identity: "opaque-identity", scene: "login", purpose: "consumer-purpose", resource: "opaque-resource", browser_key:, return_url: "https://www.example.com/consumer-callback")
   end
 
   teardown do
@@ -46,7 +46,7 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
   end
 
   test "page rejects a different browser" do
-    session[:aliyun_captcha_browser_key] = "another-browser"
+    @request.session = ActionController::TestSession.new
     get :show, params: { id: @challenge.id }
 
     assert_response :forbidden
