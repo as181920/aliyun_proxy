@@ -31,7 +31,7 @@ module AliyunProxy::Captcha
       end
 
       def valid_return_url(value)
-        uri = valid_url(value)
+        uri = valid_url(value, allow_http_loopback: true)
         origins = ENV.fetch("aliyun_captcha_return_origins", "").split(",").map(&:strip)
         origins << origin(URI(base_url))
         raise ArgumentError, "Return URL origin is not allowed" unless origins.any? { |allowed| matches_origin?(uri, allowed) }
@@ -59,9 +59,9 @@ module AliyunProxy::Captcha
           uri.userinfo.nil? && [nil, "", "/"].include?(uri.path) && uri.query.nil? && uri.fragment.nil?
         end
 
-        def valid_url(value)
+        def valid_url(value, allow_http_loopback: !Rails.env.production?)
           uri = URI.parse(value.to_s)
-          valid = uri.is_a?(URI::HTTPS) || (!Rails.env.production? && uri.is_a?(URI::HTTP) && %w[localhost 127.0.0.1].include?(uri.host))
+          valid = uri.is_a?(URI::HTTPS) || (allow_http_loopback && uri.is_a?(URI::HTTP) && %w[localhost 127.0.0.1].include?(uri.host))
           raise ArgumentError, "An absolute HTTPS URL is required" unless valid && uri.host.present? && uri.userinfo.nil?
 
           uri

@@ -110,11 +110,40 @@ class AliyunProxy::Captcha::ConfigurationTest < ActiveSupport::TestCase
     assert_raises(ArgumentError) { AliyunProxy::Captcha::Configuration.valid_return_url("http://localhost:3001/return") }
   end
 
-  test "production rejects even explicitly configured localhost HTTP" do
-    allow_origins("http://localhost:3000")
-    Rails.stubs(:env).returns(ActiveSupport::StringInquirer.new("production"))
+  %w[http://localhost:5174 http://127.0.0.1:5174].each do |origin|
+    test "production permits explicitly configured loopback return #{origin}" do
+      allow_origins(origin)
+      Rails.stubs(:env).returns(ActiveSupport::StringInquirer.new("production"))
+      url = "#{origin}/?source=login#/pages/user/sign-in"
 
-    assert_raises(ArgumentError) { AliyunProxy::Captcha::Configuration.valid_return_url("http://localhost:3000/return") }
+      assert_equal url, AliyunProxy::Captcha::Configuration.valid_return_url(url)
+    end
+  end
+
+  %w[http://localhost:5173 http://127.0.0.1:5174].each do |origin|
+    test "production rejects loopback return #{origin} absent from its exact allowlist" do
+      allow_origins("http://localhost:5174")
+      Rails.stubs(:env).returns(ActiveSupport::StringInquirer.new("production"))
+
+      assert_raises(ArgumentError) { AliyunProxy::Captcha::Configuration.valid_return_url(origin) }
+    end
+  end
+
+  %w[http://customer.example http://localhost.evil.example http://127.0.0.2].each do |origin|
+    test "production rejects explicitly configured non-loopback HTTP return #{origin}" do
+      allow_origins(origin)
+      Rails.stubs(:env).returns(ActiveSupport::StringInquirer.new("production"))
+
+      assert_raises(ArgumentError) { AliyunProxy::Captcha::Configuration.valid_return_url(origin) }
+    end
+  end
+
+  test "production CAPTCHA base URL still requires HTTPS even for allowlisted loopback" do
+    Rails.stubs(:env).returns(ActiveSupport::StringInquirer.new("production"))
+    ENV.stubs(:[]).with("aliyun_captcha_base_url").returns("http://localhost:3025")
+    ENV.stubs(:fetch).with("aliyun_captcha_return_origins", "").returns("http://localhost:3025")
+
+    assert_raises(ArgumentError) { AliyunProxy::Captcha::Configuration.base_url }
   end
 
   %w[https://*.code-li.com/path https://*.code-li.com?query=yes https://*.code-li.com#fragment https://user@*.code-li.com https://shfs-*.code-li.com https://* not-an-origin https://[].code-li.com].each do |pattern|

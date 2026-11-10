@@ -47,7 +47,7 @@ result = AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService.call(
 
 密码／短信登录使用用户无关的 `Captcha::LoginAttempt`；Auth 提供非敏感尝试上下文并在帐号查找前消费证明。原生登录 iframe 的 `/captcha/login_verification` 只通知父表单，不签发登录凭据。跨站 H5 在本次调用内生成随机 `captcha_client_key`，iframe fragment 传递后立即清除；服务端只存摘要，验票通过后直接通知允许的父页 origin，不依赖第三方 Cookie。只有匹配挑战的显式 client key 请求豁免验票 PATCH 的 CSRF；Cookie 挑战保持原有 CSRF 和同源限制。
 
-`aliyun_captcha_base_url` 可省略，回退使用 `app_frontend_base_url`，其 origin 自动允许回跳。`aliyun_captcha_return_origins` 为逗号分隔的 origin 白名单，支持 `https://code-li.com,https://*.code-li.com`：通配符仅匹配一个或多个完整子域名层级，不包含根域名；协议和有效端口必须一致，非默认端口需显式填写。仅对完全受控的子域名使用通配符，其他客户域名显式加入；配置项不能包含路径、query、fragment 或用户信息。返回 URL 自身的路径、query 和 hash 保留。生产只允许 HTTPS，开发环境的 localhost/127.0.0.1 HTTP 仍按具体端口匹配。
+`aliyun_captcha_base_url` 可省略，回退使用 `app_frontend_base_url`，其 origin 自动允许回跳。`aliyun_captcha_return_origins` 为逗号分隔的 origin 白名单，支持 `https://code-li.com,https://*.code-li.com`：通配符仅匹配一个或多个完整子域名层级，不包含根域名；协议和有效端口必须一致，非默认端口需显式填写。仅对完全受控的子域名使用通配符，其他客户域名显式加入；配置项不能包含路径、query、fragment 或用户信息。返回 URL 自身的路径、query 和 hash 保留。验证码服务的 base URL 在生产模式下必须使用 HTTPS。公网回跳来源同样必须使用 HTTPS；本地联调可显式加入 `http://localhost:<port>` 或 `http://127.0.0.1:<port>`，包括使用 Rails production 模式运行的 staging 后端。该例外只适用于白名单中精确匹配的 loopback 协议、主机和端口，不自动信任其它本地端口，也不允许公网 HTTP。
 
 本地验证：`bin/rails test`、`bin/rails rubocop`、`node --test test/javascript/*.mjs`。GitLab CI 使用 Mise 和 `.ruby-version` / `.nvmrc`；测试数据库配置软链接自 Runner 服务器的 `/home/gitlab-runner/shared/configs/my_products/cms/aliyun_proxy/database.yml`，在 `RAILS_ENV=test` 下执行数据库准备与测试。
 
