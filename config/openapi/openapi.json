@@ -20,11 +20,20 @@
           "schema": {
             "type": "string"
           }
+        },
+        {
+          "name": "locale",
+          "in": "query",
+          "required": false,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Optional parent page locale for iframe verification. If absent, the page uses its own Accept-Language/default locale selection."
         }
       ],
       "get": {
         "summary": "Open the shared CAPTCHA page",
-        "description": "Browser-bound challenge only. No Auth models or login dispatch are loaded by this provider. An unbound activity challenge must first visit the authenticated AntiCheat entry.",
+        "description": "Browser challenge UI without Auth models. Cookie-bound challenges require their original browser. Cross-origin login attempts may be framed only by their validated client origin; the client key is read from the iframe fragment, cleared immediately, and required for verification. Activity challenges first visit the authorized AntiCheat browser-binding entry.",
         "responses": {
           "200": {
             "description": "HTML CAPTCHA page"
@@ -116,7 +125,9 @@
               }
             }
           }
-        }
+        },
+        "operationId": "aliyunProxyCaptchaChallengeShow",
+        "security": []
       },
       "patch": {
         "summary": "Verify the opaque SDK ticket",
@@ -284,7 +295,53 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "X-Captcha-Client-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "description": "Cross-origin login only. Must match this challenge; this explicit credential replaces cookie CSRF for this PATCH only. Cookie-bound challenges still require browser matching and CSRF."
+          }
+        ],
+        "operationId": "aliyunProxyCaptchaChallengeVerify",
+        "security": []
+      }
+    },
+    "/captcha/login_verification": {
+      "get": {
+        "summary": "Notify a same-origin login iframe parent after human verification or cancellation",
+        "description": "No Auth user lookup, credential issuance or final proof consumption. The original login POST still verifies credentials. Cross-origin H5 client challenges notify their configured parent directly.",
+        "parameters": [
+          {
+            "name": "captcha_challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML postMessage notification"
+          },
+          "403": {
+            "description": "Browser, purpose or verification mismatch; minimal HTML or structured JSON error"
+          },
+          "410": {
+            "description": "Expired challenge; minimal HTML or structured JSON error"
+          },
+          "503": {
+            "description": "Storage unavailable; minimal HTML or structured JSON error"
+          }
+        },
+        "operationId": "aliyunProxyCaptchaLoginVerificationShow",
+        "security": []
       }
     }
   }

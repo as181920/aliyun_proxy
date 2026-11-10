@@ -12,6 +12,7 @@ en:
       unavailable: "Verification is unavailable. Please try again later."
       expired: "Verification expired. Return and start again."
       cancel: "Go back"
+      cancel_verification: "Cancel verification"
       browser_mismatch: "Verification session does not match. Return and start again."
       required: "Complete security verification to continue."
       cancelled: "Verification cancelled. Sign in again or return to your previous page."

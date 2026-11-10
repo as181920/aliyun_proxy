@@ -1,0 +1,4 @@
+<p role="status"><%= t("aliyun_proxy.captcha.checking") %></p>
+<script nonce="<%= content_security_policy_nonce %>">
+  window.parent.postMessage({ type: <%= raw json_escape((@cancelled ? "aliyun_proxy:captcha_cancelled" : "aliyun_proxy:captcha_verified").to_json) %>, challenge: <%= raw json_escape(@challenge.id.to_json) %> }, window.location.origin);
+</script>

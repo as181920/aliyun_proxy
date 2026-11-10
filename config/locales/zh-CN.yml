@@ -12,6 +12,7 @@ zh-CN:
       unavailable: "验证服务暂不可用，请稍后重试"
       expired: "验证已过期，请返回重新发起"
       cancel: "返回"
+      cancel_verification: "取消验证"
       browser_mismatch: "验证会话不一致，请返回重新发起"
       required: "请完成安全验证后继续"
       cancelled: "已取消安全验证，请重新登录或返回"

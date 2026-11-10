@@ -1,10 +1,13 @@
 module AliyunProxy
   class Captcha::ChallengesController < Captcha::BaseController
+    skip_forgery_protection if: -> { action_name == "update" && client_key_matches? }
+
     before_action :load_challenge
+    content_security_policy only: :show, if: -> { @client_origin.present? } do |policy|
+      policy.frame_ancestors :self, @client_origin
+    end
     layout "aliyun_proxy/captcha"
 
-    rescue_from Captcha::Challenge::Expired, with: :expired_challenge
-    rescue_from Captcha::Challenge::BrowserMismatch, with: :browser_mismatch
 
     def show
       @client_options = Captcha::Configuration.client_options(scene: @challenge.attributes.fetch("scene"), certify_id: @challenge.attributes.fetch("certify_id"))
@@ -31,32 +34,23 @@ module AliyunProxy
         response.headers["Cache-Control"] = "no-store"
         response.headers["Referrer-Policy"] = "no-referrer"
         @challenge = Captcha::Challenge.find(params[:id])
-        raise Captcha::Challenge::BrowserMismatch unless @challenge.browser_matches?(Captcha::BrowserBinding.key(session, create: false))
-      end
-
-      def expired_challenge
-        display_error("expired", :gone)
-      end
-
-      def browser_mismatch
-        display_error("browser_mismatch", :forbidden)
-      end
-
-      def display_error(kind, status)
-        # rescue_from runs after the around_action has restored the locale.
-        switch_locale do
-          @message = t("aliyun_proxy.captcha.#{kind}")
-          respond_to do |format|
-            format.html { render "unavailable", status: }
-            format.json { render_verification_error(kind, status) }
-          end
+        if Captcha::LoginAttempt.client_challenge?(@challenge)
+          @client_origin = @challenge.attributes.fetch("resource").fetch("client_origin")
+          response.headers.delete("X-Frame-Options") if action_name == "show"
+          raise Captcha::Challenge::BrowserMismatch if action_name == "update" && !client_key_matches?
+        else
+          raise Captcha::Challenge::BrowserMismatch unless @challenge.browser_matches?(Captcha::BrowserBinding.key(session, create: false))
         end
       end
 
-      def render_verification_error(kind, status)
-        @error_code = "captcha.#{kind}"
-        @error_message = t("aliyun_proxy.captcha.#{kind}")
-        render "error", status:
+      def client_key_matches?
+        key = request.headers["X-Captcha-Client-Key"]
+        return false if key.blank?
+
+        challenge = Captcha::Challenge.find(params[:id])
+        Captcha::LoginAttempt.client_key_matches?(challenge, key)
+      rescue Captcha::Challenge::Expired
+        false
       end
   end
 end

@@ -2,23 +2,30 @@
 <button id="captcha-trigger" type="button" hidden></button>
 <button id="captcha-button" type="button" class="acv-submit" disabled><%= t("aliyun_proxy.captcha.loading") %></button>
 <p id="captcha-status" class="acv-status" role="status" aria-live="polite"></p>
-<%= link_to @cancel_url, class: "acv-back" do %><%= t("aliyun_proxy.captcha.cancel") %><% end %>
+<%= link_to @cancel_url, id: "captcha-cancel", class: "acv-back" do %><%= t("aliyun_proxy.captcha.cancel") %><% end %>
 <script nonce="<%= content_security_policy_nonce %>">
 (() => {
   const button = document.getElementById('captcha-button');
   const status = document.getElementById('captcha-status');
   const text = <%= raw json_escape({ loading: t("aliyun_proxy.captcha.loading"), verifying: t("aliyun_proxy.captcha.verifying"), retry: t("aliyun_proxy.captcha.retry"), unavailable: t("aliyun_proxy.captcha.unavailable"), failed: t("aliyun_proxy.captcha.failed"), checking: t("aliyun_proxy.captcha.checking") }.to_json) %>;
+  const clientOrigin = <%= raw json_escape(@client_origin.to_json) %>;
+  const challengeId = <%= raw json_escape(@challenge.id.to_json) %>;
+  const clientKey = clientOrigin ? new URLSearchParams(window.location.hash.slice(1)).get('captcha_client_key') : null;
+  if (clientKey) window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+  const notify = (type) => window.parent.postMessage({ type, challenge: challengeId }, clientOrigin);
+  if (clientOrigin) document.getElementById('captcha-cancel').onclick = (event) => {
+    event.preventDefault(); notify('aliyun_proxy:captcha_cancelled');
+  };
   const options = <%= raw json_escape(@client_options.to_json) %>;
   window.AliyunCaptchaConfig = { region: 'cn', prefix: <%= raw json_escape(@prefix.to_json) %> };
   let disposed = false, submitting = false;
-  let captcha, readyTimer, script;
+  let captcha, script;
   const pendingRequest = new AbortController();
   const active = () => !disposed && button.isConnected;
   const cleanup = () => {
     if (disposed) return;
     disposed = true;
     button.onclick = null;
-    window.clearTimeout(readyTimer);
     pendingRequest.abort();
     captcha?.hide?.();
     if (script) {
@@ -33,7 +40,6 @@
 
   const retry = (message) => {
     if (!active()) return;
-    window.clearTimeout(readyTimer);
     button.disabled = false;
     button.textContent = text.retry;
     status.textContent = message;
@@ -60,11 +66,11 @@
       getInstance: (instance) => {
         if (!active()) { instance.hide?.(); return; }
         captcha = instance;
-        readyTimer = window.setTimeout(() => {
-          if (!active()) return;
+        queueMicrotask(() => {
+          if (!active() || captcha !== instance) return;
           button.disabled = false;
           verify();
-        }, 2000);
+        });
       },
       fail: () => { if (!submitting) retry(text.failed); },
       onError: () => { if (!submitting) { captcha = null; retry(text.unavailable); } },
@@ -77,12 +83,16 @@
         try {
           const response = await fetch(<%= raw json_escape(captcha_verification_path.to_json) %>, {
             method: 'PATCH', credentials: 'same-origin', signal: pendingRequest.signal,
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content, ...(clientKey ? { 'X-Captcha-Client-Key': clientKey } : {}) },
             body: JSON.stringify({ captcha: { verify_param: parameter } })
           });
           const result = await response.json();
           if (!active()) return;
-          if (response.ok && result.redirect_url) { window.location.replace(result.redirect_url); return; }
+          if (response.ok && result.redirect_url) {
+            if (clientOrigin) notify('aliyun_proxy:captcha_verified');
+            else window.location.replace(result.redirect_url);
+            return;
+          }
           retry(result.error?.message || text.failed);
         } catch (_) {
           if (!active()) return;

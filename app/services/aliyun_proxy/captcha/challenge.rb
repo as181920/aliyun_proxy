@@ -28,7 +28,11 @@ module AliyunProxy::Captcha
       def find(id)
         raise Expired unless id.to_s.match?(/\A[A-Za-z0-9_-]{43}\z/)
 
-        attributes = Rails.cache.read(key(id))
+        attributes = begin
+          Rails.cache.read(key(id))
+        rescue StandardError => error
+          raise StorageUnavailable, error.message
+        end
         raise Expired unless attributes && attributes.fetch("expires_at") > Time.current.to_i && attributes["state"] != "revoked"
 
         new(id, attributes)

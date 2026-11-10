@@ -22,6 +22,64 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
     @original.each { |key, value| value ? ENV[key] = value : ENV.delete(key) }
   end
 
+  test "cross-origin login page allows only its configured parent origin" do
+    client_challenge
+    get :show, params: { id: @challenge.id }
+
+    assert_response :success
+    assert_nil response.headers["X-Frame-Options"]
+    assert_includes @request.content_security_policy.build, "frame-ancestors 'self' https://app.example.com"
+  end
+
+  test "client proof verification uses an explicit key rather than browser cookies or CSRF" do
+    client_challenge
+    provider_result
+    @request.session = ActionController::TestSession.new
+    @request.headers["X-Captcha-Client-Key"] = @client_key
+    original_protection = @controller.class.allow_forgery_protection
+    @controller.class.allow_forgery_protection = true
+    patch :update, params: { id: @challenge.id, captcha: { verify_param: "opaque" } }, format: :json
+
+    assert_response :success
+    assert_predicate @challenge, :verified?
+  ensure
+    @controller.class.allow_forgery_protection = original_protection
+  end
+
+  test "incorrect client key cannot bypass forgery protection" do
+    client_challenge
+    @request.headers["X-Captcha-Client-Key"] = SecureRandom.urlsafe_base64(32)
+    original_protection = @controller.class.allow_forgery_protection
+    @controller.class.allow_forgery_protection = true
+
+    assert_raises(ActionController::InvalidAuthenticityToken) do
+      patch :update, params: { id: @challenge.id, captcha: { verify_param: "opaque" } }, format: :json
+    end
+  ensure
+    @controller.class.allow_forgery_protection = original_protection
+  end
+
+  test "storage failure while loading the page returns a localized error" do
+    AliyunProxy::Captcha::Challenge.stubs(:find).raises(AliyunProxy::Captcha::Challenge::StorageUnavailable)
+    get :show, params: { id: @challenge.id }
+
+    assert_response :service_unavailable
+    assert_select '[role="alert"]', text: I18n.t("aliyun_proxy.captcha.unavailable")
+  end
+
+  test "storage failure before client verification returns structured JSON" do
+    @request.headers["X-Captcha-Client-Key"] = SecureRandom.urlsafe_base64(32)
+    AliyunProxy::Captcha::Challenge.stubs(:find).raises(AliyunProxy::Captcha::Challenge::StorageUnavailable)
+    original_protection = @controller.class.allow_forgery_protection
+    @controller.class.allow_forgery_protection = true
+    patch :update, params: { id: @challenge.id, captcha: { verify_param: "opaque" } }, format: :json
+
+    assert_response :service_unavailable
+    assert_equal "captcha.unavailable", response.parsed_body.dig("error", "code")
+  ensure
+    @controller.class.allow_forgery_protection = original_protection
+  end
+
   test "standalone provider renders without any Auth engine" do
     get :show, params: { id: @challenge.id }
 
@@ -171,6 +229,14 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
   end
 
   private
+
+    def client_challenge
+      @client_key = SecureRandom.urlsafe_base64(32)
+      @challenge = AliyunProxy::Captcha::LoginAttempt.issue(session:,
+                                                         client_key: @client_key,
+                                                         resource: { "client_origin" => "https://app.example.com", "path" => "/login" },
+                                                         return_url: "https://www.example.com/complete")
+    end
 
     def provider_result(code: "T001")
       AliyunProxy::Captcha::Client.any_instance.stubs(:verify).returns(

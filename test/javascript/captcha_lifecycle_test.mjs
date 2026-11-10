@@ -5,6 +5,8 @@ import { runInNewContext } from 'node:vm';
 
 const template = readFileSync(new URL('../../app/views/aliyun_proxy/captcha/_verification.html.erb', import.meta.url), 'utf8');
 const rendered = template.replace(/<%=[\s\S]*?%>/g, expression => {
+  if (expression.includes('@client_origin')) return 'null';
+  if (expression.includes('@challenge.id')) return JSON.stringify('challenge');
   if (expression.includes('@client_options')) return JSON.stringify({ SceneId: 'scene' });
   if (expression.includes('@prefix')) return JSON.stringify('prefix');
   if (expression.includes('captcha_verification_path')) return JSON.stringify('/verify.json');
@@ -21,6 +23,7 @@ function page({ loaded = true, traceless = true, fetch, start } = {}) {
   const timers = new Map();
   const calls = { initialized: 0, started: 0, shown: 0, hidden: 0, requests: 0, redirected: [] };
   let options, loader, nextTimer = 0;
+  const microtasks = [];
   document.getElementById = id => id === 'captcha-button' ? button : status;
   document.querySelector = () => ({ content: 'csrf-token' });
   document.createElement = () => ({ remove() { calls.loaderRemoved = true; } });
@@ -40,9 +43,11 @@ function page({ loaded = true, traceless = true, fetch, start } = {}) {
   if (loaded) window.initAliyunCaptcha = initialize;
   runInNewContext(source, {
     window, document, AbortController,
+    queueMicrotask(callback) { microtasks.push(callback); },
     fetch(...args) { calls.requests++; return fetch(...args); }
   });
   const runTimers = () => {
+    while (microtasks.length) microtasks.shift()();
     for (const [id, { callback }] of [...timers]) { timers.delete(id); callback(); }
   };
   return { document, window, button, status, calls, timers, initialize, runTimers,
@@ -60,7 +65,7 @@ test('a Turbo-rendered page initializes with the already loaded SDK', () => {
 
 test('a ready page starts traceless verification once without a user click', () => {
   const p = page();
-  assert.equal([...p.timers.values()][0].delay, 2000);
+  assert.equal(p.timers.size, 0);
   p.runTimers();
   p.runTimers();
   p.button.click();

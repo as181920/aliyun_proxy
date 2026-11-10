@@ -43,7 +43,9 @@ result = AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService.call(
 
 `AliyunProxy::Captcha` 提供供应商验票、加密场景、浏览器绑定的短期挑战及统一页面。它不依赖身份或活动 engines；消费方负责一次性授权消费和最终登录/业务动作。浏览器协议入口为 `/api-docs/openapi.json`，页面为 `/captcha/challenges/:id`（均相对于实际 engine mount）。长期分层与接入契约统一维护在 EasyBiz GitLab Wiki 的 `products/captcha_verification`。
 
-统一页面在 SDK 就绪并完成必要的环境采集等待后自动发起无痕验证，通过后经服务端验票自动回跳；是否需要追加交互由阿里云判断。SDK 必需的触发元素隐藏保留，页面通过官方实例方法调用，不模拟用户点击。关闭交互、加载或验票失败时提供手动重试，不自动循环；Turbo 离开时取消等待与请求。Auth 和活动消费方无需另外嵌入 SDK。
+统一页面在 SDK 的 `getInstance` 初始化成功回调后自动发起无痕验证，不额外固定等待两秒，通过后经服务端验票自动回跳；是否需要追加交互由阿里云判断。SDK 必需的触发元素隐藏保留，页面通过官方实例方法调用，不模拟用户点击。关闭交互、加载或验票失败时提供手动重试，不自动循环；Turbo 离开时取消等待与请求。Auth 和活动消费方无需另外嵌入 SDK。
+
+密码／短信登录使用用户无关的 `Captcha::LoginAttempt`；Auth 提供非敏感尝试上下文并在帐号查找前消费证明。原生登录 iframe 的 `/captcha/login_verification` 只通知父表单，不签发登录凭据。跨站 H5 在本次调用内生成随机 `captcha_client_key`，iframe fragment 传递后立即清除；服务端只存摘要，验票通过后直接通知允许的父页 origin，不依赖第三方 Cookie。只有匹配挑战的显式 client key 请求豁免验票 PATCH 的 CSRF；Cookie 挑战保持原有 CSRF 和同源限制。
 
 `aliyun_captcha_base_url` 可省略，回退使用 `app_frontend_base_url`，其 origin 自动允许回跳。`aliyun_captcha_return_origins` 为逗号分隔的 origin 白名单，支持 `https://code-li.com,https://*.code-li.com`：通配符仅匹配一个或多个完整子域名层级，不包含根域名；协议和有效端口必须一致，非默认端口需显式填写。仅对完全受控的子域名使用通配符，其他客户域名显式加入；配置项不能包含路径、query、fragment 或用户信息。返回 URL 自身的路径、query 和 hash 保留。生产只允许 HTTPS，开发环境的 localhost/127.0.0.1 HTTP 仍按具体端口匹配。
 

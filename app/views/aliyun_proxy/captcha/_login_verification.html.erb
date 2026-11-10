@@ -1,0 +1,18 @@
+<% content_for :head_additions do %>
+  <style nonce="<%= content_security_policy_nonce %>" data-turbo-track="dynamic">
+    .login-captcha-dialog { box-sizing: border-box; width: min(calc(100vw - 1rem), 34rem); max-width: calc(100vw - 1rem); border: 0; border-radius: 0.5rem; padding: 1rem 0.75rem; font-size: 1rem; }
+    .login-captcha-dialog::backdrop { background: rgb(0 0 0 / 35%); }
+    .login-captcha-dialog iframe { width: 100%; height: min(70vh, 34rem); border: 0; }
+    .login-captcha-dialog [role="status"] { font-size: 0.875rem; }
+    .login-captcha-dialog [role="status"]:empty { display: none; }
+    @media (max-width: 22.5rem) { .login-captcha-dialog { width: 100vw; max-width: 100vw; padding: 0.75rem 0; } }
+  </style>
+<% end %>
+<dialog class="login-captcha-dialog" data-login-captcha data-locale="<%= I18n.locale %>" data-error="<%= t("aliyun_proxy.captcha.unavailable") %>">
+  <p role="status" aria-live="polite"><%= t("aliyun_proxy.captcha.loading") %></p>
+  <iframe title="<%= t("aliyun_proxy.captcha.required") %>" hidden></iframe>
+  <div class="d-flex justify-content-center pt-2">
+    <button type="button" class="btn btn-secondary"><%= t("aliyun_proxy.captcha.cancel_verification") %></button>
+  </div>
+</dialog>
+<%= javascript_include_tag "aliyun_proxy/login_verification", defer: true, nonce: content_security_policy_nonce %>
