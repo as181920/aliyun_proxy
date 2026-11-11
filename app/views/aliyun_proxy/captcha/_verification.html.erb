@@ -51,8 +51,8 @@
     button.textContent = text.verifying;
     status.textContent = '';
     try {
+      captcha.show();
       if (typeof captcha.startTracelessVerification === 'function') captcha.startTracelessVerification();
-      else captcha.show();
     } catch (_) {
       retry(text.unavailable);
     }

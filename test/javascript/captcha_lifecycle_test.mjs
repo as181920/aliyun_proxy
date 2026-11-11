@@ -22,7 +22,7 @@ function page({ loaded = true, traceless = true, fetch, start } = {}) {
   const status = { textContent: '' };
   const timers = new Map();
   const calls = { initialized: 0, started: 0, shown: 0, hidden: 0, requests: 0, redirected: [] };
-  let options, loader, nextTimer = 0;
+  let options, loader, instance, nextTimer = 0;
   const microtasks = [];
   document.getElementById = id => id === 'captcha-button' ? button : status;
   document.querySelector = () => ({ content: 'csrf-token' });
@@ -36,8 +36,16 @@ function page({ loaded = true, traceless = true, fetch, start } = {}) {
   const initialize = config => {
     calls.initialized++;
     options = config;
-    const instance = { hide() { calls.hidden++; }, show() { calls.shown++; } };
-    if (traceless) instance.startTracelessVerification = () => { calls.started++; start?.(); };
+    instance = {
+      visible: false,
+      hide() { calls.hidden++; this.visible = false; },
+      show() { calls.shown++; this.visible = true; }
+    };
+    if (traceless) instance.startTracelessVerification = () => {
+      calls.started++;
+      if (calls.started === 1) instance.visible = true;
+      start?.();
+    };
     config.getInstance(instance);
   };
   if (loaded) window.initAliyunCaptcha = initialize;
@@ -51,7 +59,7 @@ function page({ loaded = true, traceless = true, fetch, start } = {}) {
     for (const [id, { callback }] of [...timers]) { timers.delete(id); callback(); }
   };
   return { document, window, button, status, calls, timers, initialize, runTimers,
-    get options() { return options; }, get loader() { return loader; } };
+    get instance() { return instance; }, get options() { return options; }, get loader() { return loader; } };
 }
 
 test('a Turbo-rendered page initializes with the already loaded SDK', () => {
@@ -115,6 +123,22 @@ test('closing the risk interaction leaves a retry instead of a stuck loading sta
   assert.equal(p.button.disabled, false);
   p.button.click();
   assert.equal(p.calls.started, 2);
+});
+
+test('retry reopens an interaction that the user dismissed after a failed answer', () => {
+  const p = page();
+  p.runTimers();
+  p.options.fail();
+  p.instance.hide();
+  p.options.onClose('userDismiss');
+  assert.equal(p.instance.visible, false);
+
+  p.button.click();
+
+  assert.equal(p.instance.visible, true);
+  assert.equal(p.calls.started, 2);
+  assert.equal(p.calls.initialized, 1);
+  assert.equal(p.calls.requests, 0);
 });
 
 test('SDK errors wait for manual retry before reinitializing', () => {
