@@ -174,7 +174,7 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
 
     assert_response :gone
     assert_select "h1", text: "Security verification"
-    assert_select "h2", text: "Verification expired. Return and start again."
+    assert_select "[role=alert]", text: "Verification expired. Return and start again."
   end
 
   test "locale query switches the page to Chinese" do
@@ -218,7 +218,7 @@ class AliyunProxy::Captcha::ChallengesControllerTest < ActionController::TestCas
     get :show, params: { id: "1" }
 
     assert_response :gone
-    assert_select "h2", text: "Verification expired. Return and start again."
+    assert_select "[role=alert]", text: "Verification expired. Return and start again."
   end
 
   test "verification callback does not inject provider locale" do

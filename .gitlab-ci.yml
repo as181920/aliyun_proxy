@@ -11,15 +11,12 @@ before_script:
   - bundle install -j $(nproc)
 
 stages:
-  - test
+  - verify
 
 verify:
-  stage: test
+  stage: verify
   variables:
     RAILS_ENV: test
   script:
-    - ln -s /home/gitlab-runner/shared/configs/my_products/cms/aliyun_proxy/database.yml ./test/dummy/config/database.yml
-    - bin/rails rubocop
-    - bin/rails app:db:prepare
-    - bin/rails test
-    - node --test test/javascript/*.mjs
+    - ln -sf /home/gitlab-runner/shared/configs/my_products/cms/aliyun_proxy/database.yml ./test/dummy/config/database.yml
+    - bin/ci

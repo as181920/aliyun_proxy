@@ -1,7 +1,7 @@
 module AliyunProxy
-  class Sms::Callback::TemplateReportsController < ApplicationController
+  class Sms::Callback::TemplateReportsController < Sms::Callback::BaseController
     def create
-      render json: { code: 0, msg: "成功" }, status: :ok
+      render "aliyun_proxy/sms/callback/acknowledged", formats: :json
     end
   end
 end

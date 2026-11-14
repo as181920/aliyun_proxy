@@ -5,8 +5,9 @@ module AliyunProxy::Captcha
     class StorageUnavailable < StandardError; end
     class BrowserMismatch < StandardError; end
     LIFETIME = 10.minutes
+    OBSERVATION_GRACE = 5.minutes
 
-    attr_reader :id, :attributes
+    attr_reader :id, :attributes, :verification_outcome
 
     class << self
       def issue(identity:, scene:, purpose:, resource:, return_url:, browser_key: nil)
@@ -20,12 +21,20 @@ module AliyunProxy::Captcha
           "certify_id" => "#{Configuration.prefix}_#{SecureRandom.alphanumeric(10)}",
           "expires_at" => LIFETIME.from_now.to_i
         }
-        raise StorageUnavailable unless Rails.cache.write(key(id), attributes, expires_in: LIFETIME)
+        raise StorageUnavailable unless Rails.cache.write(key(id), attributes, expires_in: LIFETIME + OBSERVATION_GRACE)
 
         new(id, attributes)
       end
 
       def find(id)
+        challenge = find_for_observation(id)
+        raise Expired unless challenge.attributes.fetch("expires_at") > Time.current.to_i && challenge.attributes["state"] != "revoked"
+
+        challenge
+      end
+
+      # Retained metadata never authorizes binding, verification or consumption.
+      def find_for_observation(id)
         raise Expired unless id.to_s.match?(/\A[A-Za-z0-9_-]{43}\z/)
 
         attributes = begin
@@ -33,7 +42,7 @@ module AliyunProxy::Captcha
         rescue StandardError => error
           raise StorageUnavailable, error.message
         end
-        raise Expired unless attributes && attributes.fetch("expires_at") > Time.current.to_i && attributes["state"] != "revoked"
+        raise Expired unless attributes && attributes.fetch("expires_at") + OBSERVATION_GRACE > Time.current.to_i
 
         new(id, attributes)
       end
@@ -98,13 +107,21 @@ module AliyunProxy::Captcha
     end
 
     def verify(parameter:)
+      @verification_outcome = nil
+      raise Expired if attributes.fetch("expires_at") <= Time.current.to_i
       raise VerificationFailed if consumed?
       return true if verified?
 
+      @verification_outcome = :invalid
+      AliyunProxy::Captcha::Client.validate_parameter(parameter)
+      @verification_outcome = :error
       result = AliyunProxy::Captcha::Client.new.verify(parameter:, scene_id: attributes.fetch("scene_id"))
       passed = result["VerifyResult"] == true && result["VerifyCode"] == "T001" &&
         result["CertifyId"].to_s == attributes.fetch("certify_id")
-      raise VerificationFailed unless passed
+      unless passed
+        @verification_outcome = :failed
+        raise VerificationFailed
+      end
       stored = with_state_lock do
         current = self.class.find(id)
         raise VerificationFailed if current.consumed?
@@ -113,6 +130,7 @@ module AliyunProxy::Captcha
       end
       raise StorageUnavailable unless stored
 
+      @verification_outcome = :verified
       true
     end
 
@@ -131,7 +149,7 @@ module AliyunProxy::Captcha
     end
 
     def verified?
-      Rails.cache.read(self.class.key(id))&.dig("state") == "verified"
+      attributes.fetch("expires_at") > Time.current.to_i && Rails.cache.read(self.class.key(id))&.dig("state") == "verified"
     end
 
     def consumed?
@@ -141,7 +159,7 @@ module AliyunProxy::Captcha
     private
 
       def remaining
-        [attributes.fetch("expires_at") - Time.current.to_i, 1].max
+        [attributes.fetch("expires_at") + OBSERVATION_GRACE - Time.current.to_i, 1].max
       end
 
       # A single cache value prevents partial eviction from resurrecting a consumed

@@ -7,26 +7,47 @@
 (() => {
   const button = document.getElementById('captcha-button');
   const status = document.getElementById('captcha-status');
-  const text = <%= raw json_escape({ loading: t("aliyun_proxy.captcha.loading"), verifying: t("aliyun_proxy.captcha.verifying"), retry: t("aliyun_proxy.captcha.retry"), unavailable: t("aliyun_proxy.captcha.unavailable"), failed: t("aliyun_proxy.captcha.failed"), checking: t("aliyun_proxy.captcha.checking") }.to_json) %>;
+  const text = <%= raw json_escape({ loading: t("aliyun_proxy.captcha.loading"), verifying: t("aliyun_proxy.captcha.verifying"), retry: t("aliyun_proxy.captcha.retry"), unavailable: t("aliyun_proxy.captcha.unavailable"), failed: t("aliyun_proxy.captcha.failed"), checking: t("aliyun_proxy.captcha.checking"), wait: t("aliyun_proxy.captcha.wait", seconds: "{seconds}") }.to_json) %>;
   const clientOrigin = <%= raw json_escape(@client_origin.to_json) %>;
   const challengeId = <%= raw json_escape(@challenge.id.to_json) %>;
   const clientKey = clientOrigin ? new URLSearchParams(window.location.hash.slice(1)).get('captcha_client_key') : null;
   if (clientKey) window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
   const notify = (type) => window.parent.postMessage({ type, challenge: challengeId }, clientOrigin);
-  if (clientOrigin) document.getElementById('captcha-cancel').onclick = (event) => {
-    event.preventDefault(); notify('aliyun_proxy:captcha_cancelled');
-  };
   const options = <%= raw json_escape(@client_options.to_json) %>;
+  const attemptPath = <%= raw json_escape(@captcha_attempt_path.to_json) %>;
+  const eventPath = <%= raw json_escape(@captcha_event_path.to_json) %>;
+  const expiresIn = <%= raw json_escape(@captcha_expires_in.to_json) %>;
   window.AliyunCaptchaConfig = { region: 'cn', prefix: <%= raw json_escape(@prefix.to_json) %> };
-  let disposed = false, submitting = false;
-  let captcha, script;
+  let disposed = false, submitting = false, attemptAuthorized = false, reserving = false;
+  let captcha, script, cooldownTimer, expiryTimer;
   const pendingRequest = new AbortController();
   const active = () => !disposed && button.isConnected;
+  const reportedEvents = new Set();
+  const reportEvent = (type) => {
+    if (!eventPath || !active() || reportedEvents.has(type)) return;
+    reportedEvents.add(type);
+    try {
+      fetch(eventPath, {
+        method: 'POST', credentials: 'same-origin', keepalive: true,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content },
+        body: JSON.stringify({ captcha_event: { type } })
+      }).catch(() => {});
+    } catch (_) { /* Observation must not interrupt verification or navigation. */ }
+  };
+  document.getElementById('captcha-cancel').onclick = (event) => {
+    reportEvent('cancelled');
+    if (clientOrigin) { event.preventDefault(); notify('aliyun_proxy:captcha_cancelled'); }
+  };
+  if (eventPath && Number.isFinite(expiresIn)) {
+    expiryTimer = window.setTimeout(() => reportEvent('expired'), Math.max(0, expiresIn) * 1000 + 250);
+  }
   const cleanup = () => {
     if (disposed) return;
     disposed = true;
     button.onclick = null;
     pendingRequest.abort();
+    window.clearInterval(cooldownTimer);
+    window.clearTimeout(expiryTimer);
     captcha?.hide?.();
     if (script) {
       script.onload = script.onerror = null;
@@ -44,16 +65,58 @@
     button.textContent = text.retry;
     status.textContent = message;
   };
-  const verify = () => {
+  const waitBeforeRetry = (message, seconds) => {
+    window.clearInterval(cooldownTimer);
+    const deadline = Date.now() + seconds * 1000;
+    const update = () => {
+      if (!active()) return;
+      const remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      button.disabled = remaining > 0;
+      button.textContent = remaining ? text.wait.replace('{seconds}', remaining) : text.retry;
+      status.textContent = message;
+      if (!remaining) window.clearInterval(cooldownTimer);
+    };
+    update();
+    cooldownTimer = window.setInterval(update, 1000);
+  };
+  const reserveAttempt = async () => {
+    if (!attemptPath) return true;
+    if (reserving) return false;
+    reserving = true;
+    try {
+      const response = await fetch(attemptPath, {
+        method: 'POST', credentials: 'same-origin', signal: pendingRequest.signal,
+        headers: { 'Accept': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content }
+      });
+      const result = await response.json();
+      if (!active()) return false;
+      if (!response.ok || result.allowed !== true) {
+        const message = result.error?.message || text.unavailable;
+        const seconds = Number(result.retry_after || response.headers.get('Retry-After'));
+        if (Number.isFinite(seconds) && seconds > 0) waitBeforeRetry(message, seconds);
+        else retry(message);
+        return false;
+      }
+      return true;
+    } catch (_) {
+      if (active()) retry(text.unavailable);
+      return false;
+    } finally { reserving = false; }
+  };
+  const verify = async () => {
     if (!active() || button.disabled) return;
     if (!captcha) { loadSdk(); return; }
     button.disabled = true;
+    if (!attemptAuthorized && attemptPath && !await reserveAttempt()) return;
+    if (!active()) return;
+    attemptAuthorized = false;
     button.textContent = text.verifying;
     status.textContent = '';
     try {
       captcha.show();
       if (typeof captcha.startTracelessVerification === 'function') captcha.startTracelessVerification();
     } catch (_) {
+      reportEvent('client_error');
       retry(text.unavailable);
     }
   };
@@ -73,7 +136,7 @@
         });
       },
       fail: () => { if (!submitting) retry(text.failed); },
-      onError: () => { if (!submitting) { captcha = null; retry(text.unavailable); } },
+      onError: () => { if (!submitting) { reportEvent('client_error'); captcha = null; retry(text.unavailable); } },
       onClose: (reason) => { if (reason === 'userDismiss' && !submitting) retry(''); },
       success: async (parameter) => {
         if (!active() || submitting) return;
@@ -89,6 +152,7 @@
           const result = await response.json();
           if (!active()) return;
           if (response.ok && result.redirect_url) {
+            window.clearTimeout(expiryTimer);
             if (clientOrigin) notify('aliyun_proxy:captcha_verified');
             else window.location.replace(result.redirect_url);
             return;
@@ -96,6 +160,7 @@
           retry(result.error?.message || text.failed);
         } catch (_) {
           if (!active()) return;
+          reportEvent('client_error');
           retry(text.unavailable);
         }
         submitting = false;
@@ -104,20 +169,26 @@
       }
     });
   };
-  const loadSdk = () => {
+  const loadSdk = async () => {
     if (!active()) return;
     button.disabled = true;
+    if ((attemptPath && !await reserveAttempt()) || !active()) return;
+    attemptAuthorized = true;
     button.textContent = text.loading;
     status.textContent = '';
     if (typeof window.initAliyunCaptcha === 'function') {
-      try { initialize(); } catch (_) { captcha = null; retry(text.unavailable); }
+      try { initialize(); } catch (_) { reportEvent('client_error'); captcha = null; retry(text.unavailable); }
       return;
     }
     script?.remove();
     script = document.createElement('script');
     script.src = 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js';
-    script.onerror = () => retry(text.unavailable);
-    script.onload = () => { if (active()) loadSdk(); };
+    script.onerror = () => { reportEvent('client_error'); retry(text.unavailable); };
+    script.onload = () => {
+      if (active()) {
+        try { initialize(); } catch (_) { reportEvent('client_error'); captcha = null; retry(text.unavailable); }
+      }
+    };
     document.head.appendChild(script);
   };
   loadSdk();

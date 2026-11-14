@@ -2,6 +2,7 @@
 en:
   aliyun_proxy:
     captcha:
+      wait: "Retry in %{seconds}s"
       title: "Security verification"
       description: "You'll continue automatically."
       loading: "Loading verification…"
@@ -18,6 +19,9 @@ en:
       cancelled: "Verification cancelled. Sign in again or return to your previous page."
     engine: "Aliyun service"
     flash:
+      authentication_failed: "Authentication failed."
+      phone_number_not_detected: "Mobile phone number not detected."
+      callback_authentication_failed: "Callback authentication failed."
       not_authorized: "Permission not authorized."
       created_successfully: "Successfully created."
       create_failed: "Create failed."

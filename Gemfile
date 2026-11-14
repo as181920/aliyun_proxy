@@ -8,6 +8,8 @@ gemspec
 gem "easy_style", git: "git@gitlab.dd-life.com:corp.front_end/easy_style_engine.git", branch: "main"
 gem "rails", ">= 8.1.4.1"
 
+gem "brakeman", "~> 8.0"
+gem "bundle-audit"
 gem "debug"
 gem "rubocop"
 gem "rubocop-capybara", require: false

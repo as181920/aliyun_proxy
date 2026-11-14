@@ -20,8 +20,14 @@ module AliyunProxy
       ENDPOINT = "https://captcha.cn-shanghai.aliyuncs.com".freeze
       API_VERSION = "2023-03-05".freeze
 
+      class << self
+        def validate_parameter(parameter)
+          raise ArgumentError, "Missing verification parameter" unless parameter.is_a?(String) && parameter.present? && parameter.bytesize <= 16_384
+        end
+      end
+
       def verify(parameter:, scene_id:)
-        raise ArgumentError, "Missing verification parameter" if parameter.blank? || parameter.bytesize > 16_384
+        self.class.validate_parameter(parameter)
 
         body = URI.encode_www_form(CaptchaVerifyParam: parameter, SceneId: scene_id)
         response = Faraday.new(url: ENDPOINT, request: { open_timeout: 2, timeout: 4 }).post("/") do |request|

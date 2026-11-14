@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+ENV["RAILS_ENV"] = "test"
+
+def run!(*command)
+  system(*command, exception: true)
+end
+
+run! "bundle", "check"
+run! "bundle", "exec", "bundle-audit", "check", "--update", "--database", "tmp/ruby-advisory-db"
+run! "bundle", "exec", "brakeman", "--quiet", "--no-pager", "--exit-on-warn", "--exit-on-error"
+run! "bin/rails", "rubocop"
+run! "bin/rails", "app:db:migrate:reset"
+run! "bin/rails", "app:zeitwerk:check"
+run! "bin/rails", "test"
+run! "node", "--test", *Dir.glob("test/javascript/*_test.mjs")

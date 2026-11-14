@@ -9,15 +9,15 @@ module AliyunProxy
       ).get_number(sp_token: phone_params[:sp_token])&.dig("Data", "Mobile")
 
       if @phone_number.present?
-        render json: { phone: { user_id: current_user.id, number: @phone_number } }, status: :ok
+        render :create, formats: :json
       else
-        render json: { error: { message: "Mobile phone number not detected." } }, status: :bad_request
+        @error_message = t("aliyun_proxy.flash.phone_number_not_detected")
+        render "aliyun_proxy/shared/error", formats: :json, status: :bad_request
       end
     rescue StandardError => e
       logger.error "#{self.class.name} #{action_name} #{e.class.name}: #{e.message}"
-      error_info = e.message.match(/Code:\s*(.*?),\s*Message:\s*(.*?),\s*URL:\s*(.*)/)
-      _code, message, _url = error_info.captures
-      render json: { error: { message: } }, status: :bad_request
+      @error_message = t("aliyun_proxy.flash.phone_number_not_detected")
+      render "aliyun_proxy/shared/error", formats: :json, status: :bad_request
     end
 
     private

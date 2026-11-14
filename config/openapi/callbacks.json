@@ -1,0 +1,521 @@
+{
+  "openapi": "3.1.2",
+  "jsonSchemaDialect": "https://spec.openapis.org/oas/3.1/dialect/base",
+  "info": {
+    "title": "AliyunProxy cloud SMS callbacks",
+    "version": "2026-11-14"
+  },
+  "servers": [
+    {
+      "url": "../.."
+    }
+  ],
+  "paths": {
+    "/sms/callback/sign_reports": {
+      "post": {
+        "summary": "Receive cloud sign reports",
+        "description": "Server-to-server JSON push: no browser cookie or CSRF token required. Query credential authentication is optional: unset or blank aliyun_sms_callback_token disables this check. When configured, verify callback_token before querying or changing business records; a body field or browser login cannot replace it. Missing/incorrect credentials return 401; a configured credential shorter than 32 bytes returns 503. Successful processing preserves the vendor acknowledgement.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "sign_name",
+                    "sign_status"
+                  ],
+                  "properties": {
+                    "sign_name": {
+                      "type": "string"
+                    },
+                    "sign_status": {
+                      "type": "string",
+                      "enum": [
+                        "approving",
+                        "approved",
+                        "rejected"
+                      ]
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Check callback endpoint connectivity",
+        "description": "Returns the vendor JSON acknowledgement without querying or changing business records. Uses the same optional query credential setting as POST; no browser authentication or CSRF token is required.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sms/callback/up_messages": {
+      "post": {
+        "summary": "Receive cloud up messages",
+        "description": "Server-to-server JSON push: no browser cookie or CSRF token required. Query credential authentication is optional: unset or blank aliyun_sms_callback_token disables this check. When configured, verify callback_token before querying or changing business records; a body field or browser login cannot replace it. Missing/incorrect credentials return 401; a configured credential shorter than 32 bytes returns 503. Successful processing preserves the vendor acknowledgement.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Check callback endpoint connectivity",
+        "description": "Returns the vendor JSON acknowledgement without querying or changing business records. Uses the same optional query credential setting as POST; no browser authentication or CSRF token is required.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sms/callback/template_reports": {
+      "post": {
+        "summary": "Receive cloud template reports",
+        "description": "Server-to-server JSON push: no browser cookie or CSRF token required. Query credential authentication is optional: unset or blank aliyun_sms_callback_token disables this check. When configured, verify callback_token before querying or changing business records; a body field or browser login cannot replace it. Missing/incorrect credentials return 401; a configured credential shorter than 32 bytes returns 503. Successful processing preserves the vendor acknowledgement.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Check callback endpoint connectivity",
+        "description": "Returns the vendor JSON acknowledgement without querying or changing business records. Uses the same optional query credential setting as POST; no browser authentication or CSRF token is required.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sms/callback/message_reports": {
+      "post": {
+        "summary": "Receive cloud message reports",
+        "description": "Server-to-server JSON push: no browser cookie or CSRF token required. Query credential authentication is optional: unset or blank aliyun_sms_callback_token disables this check. When configured, verify callback_token before querying or changing business records; a body field or browser login cannot replace it. Missing/incorrect credentials return 401; a configured credential shorter than 32 bytes returns 503. Successful processing preserves the vendor acknowledgement.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or provider failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Check callback endpoint connectivity",
+        "description": "Returns the vendor JSON acknowledgement without querying or changing business records. Uses the same optional query credential setting as POST; no browser authentication or CSRF token is required.",
+        "security": [
+          {},
+          {
+            "callbackCredential": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallbackAcknowledgement"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Callback credential missing or incorrect while authentication is enabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Configured server callback credential is too short",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "message"
+            ],
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "CallbackAcknowledgement": {
+        "type": "object",
+        "required": [
+          "code",
+          "msg"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer",
+            "const": 0
+          },
+          "msg": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "callbackCredential": {
+        "type": "apiKey",
+        "in": "query",
+        "name": "callback_token",
+        "description": "Optional random shared callback credential configured by the operator; not a vendor digital signature. Enforced only when aliyun_sms_callback_token is nonblank. Configure the full HTTPS callback URL in the cloud console."
+      }
+    }
+  }
+}

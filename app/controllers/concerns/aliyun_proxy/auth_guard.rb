@@ -10,6 +10,7 @@ module AliyunProxy
 
     included do
       helper_method :current_user
+      skip_forgery_protection if: :non_session_authentication_request?
 
       rescue_from AuthenticateFailError, InvalidAuthTypeError, InvalidAuthValueError, with: :handle_authenticate_failure
       rescue_from Pundit::NotAuthorizedError, with: :handle_authorize_failure
@@ -33,7 +34,11 @@ module AliyunProxy
       end
 
       def authenticate_user
-        send(:"authenticate_using_#{auth_params[:type].underscore}", auth_params[:value])&.tap { |u| session[:usr_user_id] = u.id }
+        send(:"authenticate_using_#{auth_params[:type].underscore}", auth_params[:value])
+      end
+
+      def non_session_authentication_request?
+        auth_params&.fetch(:type).in?(%w[PlainUserCode PlainUserToken])
       end
 
       def authenticate_using_basic(_credentials)
@@ -76,16 +81,18 @@ module AliyunProxy
 
       def handle_authenticate_failure(error)
         logger.warn "#{error.class.name}: #{error.message}"
+        @error_message = t("aliyun_proxy.flash.authentication_failed")
         respond_to do |format|
           format.html { render plain: "用户认证失败。", status: :unauthorized }
-          format.json { render json: { error: { message: "#{error.class.name}: #{error.message}" } }, status: :unauthorized }
+          format.json { render "aliyun_proxy/shared/error", status: :unauthorized }
         end
       end
 
       def handle_authorize_failure(_error)
+        @error_message = t("aliyun_proxy.flash.not_authorized")
         respond_to do |format|
           format.html { render plain: "权限不足，请联系管理员。", status: :forbidden }
-          format.json { head :forbidden }
+          format.json { render "aliyun_proxy/shared/error", status: :forbidden }
         end
       end
   end

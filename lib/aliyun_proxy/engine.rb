@@ -12,7 +12,8 @@ module AliyunProxy
     isolate_namespace AliyunProxy
 
     initializer "aliyun_proxy.captcha_parameter_filters" do |app|
-      app.config.filter_parameters += %i[verify_param captcha_verify_param captcha_challenge challenge_url captcha_client_key aliyun_captcha_ekey]
+      app.config.filter_parameters += %i[verify_param captcha_verify_param captcha_challenge challenge_url captcha_client_key aliyun_captcha_ekey
+                                         callback_token aliyun_sms_callback_token]
     end
 
     initializer :append_migrations do |app|

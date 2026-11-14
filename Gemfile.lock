@@ -118,10 +118,17 @@ GEM
     ast (2.4.3)
     base64 (0.3.0)
     bigdecimal (4.1.3)
+    brakeman (8.1.0)
+      racc
     breadcrumbs_on_rails (4.1.0)
       railties (>= 5.0)
     browser (6.2.0)
     builder (3.3.0)
+    bundle-audit (0.2.0)
+      bundler-audit
+    bundler-audit (0.9.3)
+      bundler (>= 1.2.0)
+      thor (~> 1.0)
     capybara (3.40.0)
       addressable
       matrix
@@ -433,6 +440,8 @@ PLATFORMS
 
 DEPENDENCIES
   aliyun_proxy!
+  brakeman (~> 8.0)
+  bundle-audit
   capybara
   debug
   easy_style!

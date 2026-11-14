@@ -2,6 +2,7 @@
 zh-CN:
   aliyun_proxy:
     captcha:
+      wait: "%{seconds} 秒后重试"
       title: "安全验证"
       description: "验证后自动继续"
       loading: "正在加载验证…"
@@ -18,6 +19,9 @@ zh-CN:
       cancelled: "已取消安全验证，请重新登录或返回"
     engine: "阿里云服务"
     flash:
+      authentication_failed: "身份认证失败。"
+      phone_number_not_detected: "未能识别手机号码。"
+      callback_authentication_failed: "回调认证失败。"
       not_authorized: "权限不足，请联系管理员"
       created_successfully: "创建成功"
       create_failed: "创建失败"

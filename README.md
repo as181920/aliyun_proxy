@@ -51,6 +51,15 @@ result = AliyunProxy::ModelStudio::Ocr::KeyInformationExtractionService.call(
 
 本地验证：`bin/rails test`、`bin/rails rubocop`、`node --test test/javascript/*.mjs`。GitLab CI 使用 Mise 和 `.ruby-version` / `.nvmrc`；测试数据库配置软链接自 Runner 服务器的 `/home/gitlab-runner/shared/configs/my_products/cms/aliyun_proxy/database.yml`，在 `RAILS_ENV=test` 下执行数据库准备与测试。
 
+## SMS callbacks
+
+短信回调支持 POST 接收消息和同一路径 GET 连通性检查。`aliyun_sms_callback_token` 为可选共享密钥：
+未设置／空白时跳过该项校验；设置后必须通过 URL query 的 `callback_token` 匹配，缺失或错误返回 401，
+已设置但短于 32 字节返回 503。GET 只返回供应商 ACK，不查询或修改业务数据；POST 保留原回执处理。
+这些服务端回调不需要浏览器登录或 CSRF token；此设置与登录、CAPTCHA 验票配置独立。
+
+接口见角色独立的 `/api-docs/openapi/callbacks.json`；路径均相对于实际 engine mount。
+
 ## Installation
 Add this line to your application's Gemfile:
 

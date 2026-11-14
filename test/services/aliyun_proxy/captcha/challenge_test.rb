@@ -136,6 +136,97 @@ class AliyunProxy::Captcha::ChallengeTest < ActiveSupport::TestCase
     assert_raises(AliyunProxy::Captcha::Challenge::Expired) { stale.verify(parameter: "opaque") }
   end
 
+  test "the verification outcome is request local and is not stored with the challenge" do
+    verify
+
+    assert_equal :verified, @challenge.verification_outcome
+    refute AliyunProxy::Captcha::Challenge.find(@challenge.id).attributes.key?("verification_outcome")
+  end
+
+  [nil, "", "   ", 123, "x" * 16_385].each_with_index do |parameter, index|
+    test "invalid parameter #{index} is identified before calling the provider" do
+      AliyunProxy::Captcha::Client.expects(:new).never
+
+      assert_raises(ArgumentError) { @challenge.verify(parameter:) }
+      assert_equal :invalid, @challenge.verification_outcome
+    end
+  end
+
+  test "a provider rejection is distinguishable from a local state failure" do
+    provider_result(code: "F001")
+
+    assert_raises(AliyunProxy::Captcha::Challenge::VerificationFailed) { @challenge.verify(parameter: "opaque") }
+    assert_equal :failed, @challenge.verification_outcome
+  end
+
+  test "a provider outage records a technical outcome" do
+    AliyunProxy::Captcha::Client.any_instance.stubs(:verify).raises(AliyunProxy::Captcha::Client::Unavailable)
+
+    assert_raises(AliyunProxy::Captcha::Client::Unavailable) { @challenge.verify(parameter: "opaque") }
+    assert_equal :error, @challenge.verification_outcome
+  end
+
+  test "a successful vendor result cannot mask failure to save verified state" do
+    provider_result
+    Rails.cache.stubs(:write).returns(false)
+
+    assert_raises(AliyunProxy::Captcha::Challenge::StorageUnavailable) { @challenge.verify(parameter: "opaque") }
+    assert_equal :error, @challenge.verification_outcome
+  end
+
+  test "a state conflict after a passed vendor result is not a human rejection" do
+    provider_result
+    @challenge.stubs(:with_state_lock).raises(AliyunProxy::Captcha::Challenge::VerificationFailed)
+
+    assert_raises(AliyunProxy::Captcha::Challenge::VerificationFailed) { @challenge.verify(parameter: "opaque") }
+    assert_equal :error, @challenge.verification_outcome
+  end
+
+  test "replaying verified state does not retain an earlier vendor outcome" do
+    verify
+    @challenge.verify(parameter: "opaque")
+
+    assert_nil @challenge.verification_outcome
+  end
+
+  test "retained metadata cannot make an expired verified challenge verify again" do
+    verify
+    travel 11.minutes
+    retained = AliyunProxy::Captcha::Challenge.find_for_observation(@challenge.id)
+
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { retained.verify(parameter: "opaque") }
+  end
+
+  test "retained metadata cannot consume expired verification" do
+    verify
+    travel 11.minutes
+    retained = AliyunProxy::Captcha::Challenge.find_for_observation(@challenge.id)
+
+    refute retained.consume(identity: @identity, purpose: "reward_draw", resource: "campaign:voucher")
+  end
+
+  test "retained metadata cannot bind an expired browser challenge" do
+    travel 11.minutes
+    retained = AliyunProxy::Captcha::Challenge.find_for_observation(@challenge.id)
+
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { retained.bind_browser(key: "browser") }
+  end
+
+  test "expired verification is not reported as currently verified" do
+    verify
+    travel 11.minutes
+
+    refute_predicate @challenge, :verified?
+  end
+
+  test "reading retained metadata does not extend its original deadline" do
+    travel 14.minutes
+    AliyunProxy::Captcha::Challenge.find_for_observation(@challenge.id)
+    travel 2.minutes
+
+    assert_raises(AliyunProxy::Captcha::Challenge::Expired) { AliyunProxy::Captcha::Challenge.find_for_observation(@challenge.id) }
+  end
+
   private
 
     def provider_result(code: "T001", certify_id: @challenge.attributes["certify_id"])
